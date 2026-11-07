@@ -15,6 +15,10 @@ upgrades point at, so a broken release breaks every machine that upgrades.
 3. Tag and push: `git tag client/vX.Y.Z && git push origin client/vX.Y.Z`
    (the release workflow from issue #16 builds linux/darwin/windows for
    amd64/arm64 plus `checksums.txt`).
+   Before tagging, regenerate the changelog for the new version and commit it:
+   `npx git-cliff --tag client/vX.Y.Z -o CHANGELOG.md` then
+   `git commit -m "chore(release): client vX.Y.Z" CHANGELOG.md`.
+   Release notes for the tag: `npx git-cliff --latest --strip header`.
 4. Verify the release assets exist and the checksums match.
 5. Rolling the fleet forward is a separate step: set the target version in the
    dashboard (one client first, then all).
