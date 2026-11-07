@@ -1,8 +1,10 @@
 name: Release client
 
-# Push a tag like v1.2.3 to build ddns-client for every supported platform
-# and publish a GitHub Release with the binaries and checksums.txt.
-# Installers download releases/latest; remote upgrades download the exact tag.
+# Push a tag like v1.2.3 to build ddns-client for every supported platform,
+# upload the binaries and checksums.txt to the ddns-releases R2 bucket (served
+# by the Worker at /download/<version>/<asset>, which installers and remote
+# upgrades use), and publish a GitHub Release with the same files.
+# Requires the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
 
 on:
   push:
@@ -39,6 +41,18 @@ jobs:
           done
           (cd dist && sha256sum ddns-client_* > checksums.txt)
           cat dist/checksums.txt
+      - name: Upload to R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          for f in dist/*; do
+            npx -y wrangler@4 r2 object put "ddns-releases/${VERSION}/$(basename "$f")" --file "$f" --remote
+          done
+          # Publish last, so "latest" never points at a half-uploaded release.
+          echo "$VERSION" > dist-latest.txt
+          npx -y wrangler@4 r2 object put ddns-releases/latest.txt --file dist-latest.txt --content-type text/plain --remote
       - name: Release notes
         run: npx -y git-cliff@2 --latest --strip header -o ../RELEASE_NOTES.md
         working-directory: client
