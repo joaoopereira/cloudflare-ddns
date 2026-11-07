@@ -9,7 +9,7 @@ const migrationsDir = join(__dirname, "..", "migrations");
 
 /** Start an in-memory D1 with all migrations applied. */
 export async function setupDb() {
-  const proxy = await getPlatformProxy<{ DB: D1Database }>({ persist: false });
+  const proxy = await getPlatformProxy<{ DB: D1Database; RELEASES: R2Bucket }>({ persist: false });
   const db = proxy.env.DB;
   for (const file of readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort()) {
     const sql = readFileSync(join(migrationsDir, file), "utf8");
@@ -21,7 +21,7 @@ export async function setupDb() {
       .filter(Boolean);
     for (const statement of statements) await db.exec(statement);
   }
-  return { db, dispose: () => proxy.dispose() };
+  return { db, bucket: proxy.env.RELEASES, dispose: () => proxy.dispose() };
 }
 
 export async function resetDb(db: D1Database) {

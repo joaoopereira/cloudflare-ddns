@@ -16,6 +16,18 @@ database_name = "ddns"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
+# Client release binaries (uploaded by .github/workflows/release.yml).
+# Create once with `npx wrangler r2 bucket create ddns-releases`.
+[[r2_buckets]]
+binding = "RELEASES"
+bucket_name = "ddns-releases"
+
+# Installer scripts are bundled as text.
+[[rules]]
+type = "Text"
+globs = ["**/*.sh", "**/*.ps1"]
+fallthrough = true
+
 # Enforce the approval timeout every minute.
 [triggers]
 crons = ["* * * * *"]

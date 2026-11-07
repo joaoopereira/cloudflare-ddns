@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/joaoopereira/cloudflare-ddns/client/internal/agent"
@@ -78,7 +79,7 @@ func run(ctx context.Context, opts options) int {
 	log.Info("starting", "version", version, "server", cfg.ServerURL, "id", cfg.ID)
 	a := &agent.Agent{
 		API:      api.New(cfg.ServerURL),
-		Upgrader: &upgrade.Upgrader{ReleaseBase: upgrade.DefaultReleaseBase, Executable: exe},
+		Upgrader: &upgrade.Upgrader{ReleaseBase: strings.TrimRight(cfg.ServerURL, "/") + "/download", Executable: exe},
 		Log:      log,
 		ID:       cfg.ID,
 		Secret:   cfg.Secret,

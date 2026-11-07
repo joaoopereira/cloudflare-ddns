@@ -1,4 +1,5 @@
-// Package upgrade replaces the running binary with a release from GitHub.
+// Package upgrade replaces the running binary with a release served by the
+// cloudflare-ddns Worker at <server>/download/<version>/<asset>.
 package upgrade
 
 import (
@@ -17,9 +18,6 @@ import (
 	"time"
 )
 
-// DefaultReleaseBase is where release assets are downloaded from.
-const DefaultReleaseBase = "https://github.com/joaoopereira/cloudflare-ddns/releases/download"
-
 var versionRE = regexp.MustCompile(`^v\d+\.\d+\.\d+([-.+][0-9A-Za-z.-]+)?$`)
 
 // AssetName is the release asset for an OS/arch, e.g. ddns-client_linux_amd64.
@@ -33,7 +31,7 @@ func AssetName(goos, goarch string) string {
 
 // Upgrader downloads, verifies and installs a release.
 type Upgrader struct {
-	ReleaseBase string       // e.g. DefaultReleaseBase
+	ReleaseBase string       // e.g. https://ddns.example.com/download
 	Executable  string       // path of the binary to replace
 	HTTP        *http.Client // defaults to a client with a 5 minute timeout
 }

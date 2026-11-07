@@ -6,6 +6,7 @@ import { CloudflareApi } from "../lib/cloudflare";
 import { eventStmt, logEvent } from "../lib/events";
 import { getSettings, updateSettings, type Settings } from "../lib/settings";
 import { now } from "../lib/util";
+import { latestVersion } from "./public";
 
 /** Dashboard API. Protected by Cloudflare Access. */
 export const adminApi = new Hono<AppEnv>();
@@ -151,6 +152,8 @@ adminApi.post("/clients/:id/upgrade", async (c) => {
   ]);
   return c.json({ ok: true });
 });
+
+adminApi.get("/releases/latest", async (c) => c.json({ version: await latestVersion(c.env.RELEASES) }));
 
 adminApi.get("/settings", async (c) => c.json({ settings: await getSettings(c.env.DB) }));
 

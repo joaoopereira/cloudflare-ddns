@@ -3,6 +3,7 @@ import type { AppEnv, Env } from "./env";
 import { expirePendingClients } from "./lib/clients";
 import { adminApi } from "./routes/admin";
 import { clientApi } from "./routes/client";
+import { publicRoutes } from "./routes/public";
 
 export const app = new Hono<AppEnv>();
 
@@ -14,6 +15,7 @@ app.get("/health", async (c) => {
   return c.json({ ok: true, db: row !== null });
 });
 
+app.route("/", publicRoutes);
 app.route("/api/client", clientApi);
 app.route("/api/admin", adminApi);
 
