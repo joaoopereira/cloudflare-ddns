@@ -45,12 +45,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: server/package-lock.json
+          cache-dependency-path: |
+            server/package-lock.json
+            dashboard/package-lock.json
       - if: steps.check.outputs.ready == 'true'
         run: npm ci
       - name: Apply D1 migrations
         if: steps.check.outputs.ready == 'true'
         run: npx wrangler d1 migrations apply ddns --remote
+      - name: Build dashboard
+        if: steps.check.outputs.ready == 'true'
+        run: npm run build:dashboard
       - name: Deploy Worker
         if: steps.check.outputs.ready == 'true'
         run: npx wrangler deploy

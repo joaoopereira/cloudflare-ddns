@@ -22,6 +22,14 @@ migrations_dir = "migrations"
 binding = "RELEASES"
 bucket_name = "ddns-releases"
 
+# The dashboard (built from ../dashboard) is served as static assets. API,
+# download and installer paths always go to the Worker.
+[assets]
+directory = "../dashboard/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/download/*", "/install.sh", "/install.ps1", "/health"]
+
 # Installer scripts are bundled as text.
 [[rules]]
 type = "Text"

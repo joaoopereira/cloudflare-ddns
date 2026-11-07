@@ -9,6 +9,8 @@ export interface Env {
   ACCESS_AUD?: string;
   /** "true" disables Access checks on the admin API. Local development only (.dev.vars). */
   ALLOW_INSECURE_ADMIN?: string;
+  /** Static assets (the dashboard). */
+  ASSETS?: Fetcher;
   /** R2 bucket with client release binaries (<version>/<asset>, latest.txt). */
   RELEASES?: R2Bucket;
   /** Workers rate-limit binding for registrations (per IP). Optional. */
