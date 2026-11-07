@@ -41,3 +41,15 @@ description: Run the cloudflare-ddns Worker locally with a local D1 database and
    uploading a v0.0.2 the same way; the client exits with code 75 after
    replacing itself.
 7. Stop the dev server when done. Reset local state with `rm -rf server/.wrangler`.
+
+## Dashboard
+
+- Build once so the Worker serves it: `cd dashboard && npm ci && npm run build`,
+  then open http://localhost:8787 (needs `ALLOW_INSECURE_ADMIN=true` in
+  `server/.dev.vars`).
+- For live reload run `npm run dev` in `dashboard/` (http://localhost:5173,
+  proxies `/api` to the Worker on :8787).
+- Seed sample data with `npx wrangler d1 execute ddns --local --command "INSERT INTO clients ..."`
+  and check pages with Playwright at 390px and 1280px wide, in light and dark
+  color schemes; `document.documentElement.scrollWidth` must equal the
+  viewport width (no horizontal page scroll).

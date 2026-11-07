@@ -3,10 +3,6 @@
 This guide covers day-to-day use of cloudflare-ddns: adding machines, choosing
 their DNS records, and keeping them up to date.
 
-> Features are being built in stages. Sections marked **(planned)** describe
-> how the feature will work once it ships; check the
-> [backlog](https://github.com/joaoopereira/cloudflare-ddns/issues) for status.
-
 ## Concepts
 
 - **Client:** a machine running `ddns-client`. Each client owns exactly one
@@ -26,8 +22,9 @@ Only people allowed by the Access policy can open the dashboard.
 
 ## Adding a machine
 
-1. In the dashboard, turn on **Listen for new clients**. While it's off, new
-   machines can't register at all.
+1. In the dashboard, click **Listen for new clients**. While it's off, new
+   machines can't register at all. The install commands appear in the same
+   box, ready to copy.
 2. On the machine, run the one-liner for its OS. No questions are asked.
 
    **Linux / macOS** (as root or with sudo):
@@ -46,13 +43,14 @@ Only people allowed by the Access policy can open the dashboard.
    a Windows service on Windows) and starts immediately. Running the
    one-liner again repairs the install and updates it to the latest release.
 
-   > Until the dashboard ships, use the admin API to approve
-   > (`POST /api/admin/clients/:id/approve`, see [API reference](api.md)).
-3. Within a few seconds the machine appears under **Pending clients** with its
-   public IP, hostname and OS.
-4. Click **Approve**, pick the **zone** (domain) and type the **record name**
-   (for example `home` for `home.example.com`). Save.
-5. Turn **Listen for new clients** off again when you're done.
+
+3. Within a few seconds the machine appears under **Pending approval** with
+   its public IP, hostname and OS, plus a countdown to the approval timeout.
+4. Click **Approve…**, pick the **zone** (domain) and type the **record name**
+   (for example `home` for `home.example.com`, or `@` for the zone itself).
+   Click **Approve**. If you don't recognise the machine, click **Reject**:
+   it's refused and its IP is blocked.
+5. Click **Stop listening** when you're done.
 
 From now on the record follows the machine's public IP. If the record doesn't
 exist yet, it's created on the first heartbeat after approval.
@@ -67,15 +65,20 @@ background.
 Note that blocking is per public IP: other machines behind the same router are
 blocked from registering too.
 
-## The clients list (planned)
+## The clients list
 
-For each client you see the hostname, its record, the current IP, online or
-offline, when the IP was last updated, when the client was last seen, its OS
-and the client version.
+For each client you see its record, the current IP, online or offline, when
+the client was last seen, when the IP last changed, the machine (hostname and
+OS) and the client version. A ⚠ line under the record shows the last error,
+such as a failed DNS update or upgrade. The page refreshes every few seconds.
+On a phone, some columns are hidden; scroll the table sideways to see them.
 
-## Changing or removing a client (planned)
+## Changing or removing a client
 
-- **Edit:** change the zone or record name of an approved client.
+Use the **⋯** menu on a client's row:
+
+- **Change record…:** move an approved client to another zone or record name.
+  The new record is written on its next heartbeat; the old one is left as is.
 - **Revoke:** the client can no longer update DNS. The record is left as is.
 - **Delete:** removes the client, optionally deleting its DNS record too.
 
@@ -91,21 +94,29 @@ curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo sh -s -- uninsta
 & ([scriptblock]::Create((irm https://ddns.apps.joaoopereira.com/install.ps1))) uninstall
 ```
 
-## Blocked IPs (planned)
+## Blocked IPs
 
 **Blocked IPs** lists every blocked address, why it was blocked and when.
 Click **Unblock** to allow it again. A client behind that IP reappears under
 **Pending clients** on its next retry (within a few minutes), as long as
 **Listen for new clients** is on.
 
-## Upgrading clients (planned)
+## Activity
 
-The dashboard shows the latest released client version and the version each
-machine runs. Choose **Upgrade** on one client, or **Upgrade all**. Clients pick
-it up on their next heartbeat, verify the download, replace themselves and
-restart. If an upgrade fails, the error is shown on the client's row.
+**Activity** lists recent events: registrations, approvals, rejections,
+blocks and unblocks, IP changes, DNS errors, upgrades and settings changes.
 
-## Settings (planned)
+## Upgrading clients
+
+Above the clients table the dashboard shows the latest released client
+version. **Upgrade all** moves every client to it; **Upgrade to …** in a row's
+**⋯** menu upgrades only that machine (handy for trying a release on one
+machine first). Clients pick it up on their next heartbeat, verify the
+download, replace themselves and restart; the Version column shows
+`→ vX.Y.Z` until they're done. If an upgrade fails, the error is shown on the
+client's row and the client keeps running the old version.
+
+## Settings
 
 | Setting | Default | Meaning |
 | --- | --- | --- |

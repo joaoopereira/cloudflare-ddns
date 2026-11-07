@@ -7,9 +7,9 @@ manage them remotely.
 
 The app runs at **https://ddns.apps.joaoopereira.com**.
 
-> **Status:** early development. The Worker (client and admin API,
-> [reference](docs/api.md)), the Go client and the installers are in place;
-> the dashboard is being built. See the
+> **Status:** the MVP is complete: Worker ([API reference](docs/api.md)), Go
+> client, installers and dashboard. Follow [docs/deployment.md](docs/deployment.md)
+> to go live. See the
 > [backlog](https://github.com/joaoopereira/cloudflare-ddns/issues).
 
 ## How it works
@@ -48,7 +48,8 @@ them, and managing records.
 
 | Path | What |
 | --- | --- |
-| `server/` | Cloudflare Worker (Hono + TypeScript): client API, admin API, dashboard hosting |
+| `server/` | Cloudflare Worker (Hono + TypeScript): client API, admin API, downloads, dashboard hosting |
+| `dashboard/` | Web dashboard (React + Vite), served by the Worker as static assets |
 | `server/migrations/` | D1 schema migrations |
 | `client/` | Go client agent (`cmd/ddns-client`) |
 | `install/` | `install.sh` / `install.ps1` one-liner installers |
@@ -66,6 +67,11 @@ npm ci
 npm run db:migrate:local   # create the local D1 schema
 npm run dev                # http://localhost:8787
 npm run typecheck && npm test
+
+# Dashboard (with the Worker running on :8787 and ALLOW_INSECURE_ADMIN=true in server/.dev.vars)
+cd dashboard
+npm ci
+npm run dev                # http://localhost:5173, proxies /api to the Worker
 
 # Client
 cd client

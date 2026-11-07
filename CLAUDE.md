@@ -31,6 +31,10 @@ docs/user-guide.md for user-visible behavior.
   through `src/lib/cloudflare.ts`; tests fake it with `mockCloudflare()` in
   `test/helpers.ts`. The HTTP contract is documented in docs/api.md; keep it
   in sync.
+- `dashboard/`: React + Vite SPA (no UI library; plain CSS with light/dark
+  tokens in `src/styles.css`). Built to `dashboard/dist`, served by the Worker
+  via `[assets]` in wrangler.toml (API/download/installer paths run the
+  Worker first). Talks only to `/api/admin/*` through `src/api.ts`.
 - `server/migrations/`: D1 migrations, numbered `NNNN_name.sql`. Never edit
   a migration that has been merged; add a new one.
 - `client/`: Go agent (stdlib + x/sys for the Windows service).
@@ -45,6 +49,8 @@ docs/user-guide.md for user-visible behavior.
 
 ## Checks (run before every push)
 - `cd server && npm run typecheck && npm test`
+- `cd dashboard && npm run build` (typechecks too). Check UI changes in a
+  browser at phone and desktop widths (run-locally skill).
 - `cd client && gofmt -l . && go vet ./... && go test ./...`
 
 ## Workflow
