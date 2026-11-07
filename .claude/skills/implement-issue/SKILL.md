@@ -22,5 +22,7 @@ description: Implement a cloudflare-ddns backlog issue end to end (read issue, c
 5. Run the checks listed in CLAUDE.md.
 6. If users would notice the change, update docs/user-guide.md (remove
    "(planned)" for shipped features) and README status.
-7. Commit with `Closes #N` in the message and push to `development`. That
+7. Commit using Conventional Commits, e.g.
+   `feat(server): add client registration endpoint (#10)` with `Closes #10`
+   in the body (see CLAUDE.md for types and scopes), then push to `development`. That
    triggers CI and the production deploy, so the checks must pass first.
