@@ -72,10 +72,10 @@ go vet ./... && go test ./...
 go build -o bin/ddns-client ./cmd/ddns-client
 ```
 
-CI runs the same checks on every pull request
+CI runs the same checks on every push
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Deployment
 
-Merges to `development` deploy automatically once the one-time Cloudflare
+Pushes to `development` deploy automatically once the one-time Cloudflare
 setup is done. See **[docs/deployment.md](docs/deployment.md)**.

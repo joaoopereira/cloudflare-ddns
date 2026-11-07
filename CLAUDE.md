@@ -33,10 +33,11 @@ docs/user-guide.md for user-visible behavior.
 - `cd client && gofmt -l . && go vet ./... && go test ./...`
 
 ## Workflow
-- Backlog lives in GitHub issues (epics #1-#6 with sub-issues). Reference the
-  issue in PR titles/bodies (`Closes #N`).
-- Default branch is `development`; merges there deploy to production.
+- Backlog lives in GitHub issues (epics #1-#6 with sub-issues).
+- No pull requests: commit directly to `development` (the default branch)
+  with `Closes #N` in the message, after the checks pass. Pushes to
+  `development` deploy to production.
 - When behavior a user can see changes, update docs/user-guide.md in the same
-  PR (drop the "(planned)" marker once a feature ships).
+  commit (drop the "(planned)" marker once a feature ships).
 - Project skills in `.claude/skills/`: run-locally, add-d1-migration,
   implement-issue, deploy, release-client.
