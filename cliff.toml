@@ -32,8 +32,8 @@ filter_unconventional = true
 split_commits = false
 protect_breaking_commits = true
 filter_commits = false
-# Release tags: v1.2.3 for the whole project, client/v1.2.3 for client builds.
-tag_pattern = "^(client/)?v[0-9]+\\.[0-9]+\\.[0-9]+"
+# Release tags: v1.2.3 (client releases; the server deploys continuously).
+tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+"
 sort_commits = "oldest"
 commit_preprocessors = [
   # Link issue references.

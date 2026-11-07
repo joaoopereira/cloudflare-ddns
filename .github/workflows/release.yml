@@ -1,0 +1,48 @@
+name: Release client
+
+# Push a tag like v1.2.3 to build ddns-client for every supported platform
+# and publish a GitHub Release with the binaries and checksums.txt.
+# Installers download releases/latest; remote upgrades download the exact tag.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: client/go.mod
+      - run: go vet ./... && go test ./...
+      - name: Build binaries
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          mkdir -p dist
+          for target in linux/amd64 linux/arm64 linux/arm darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            os="${target%/*}"; arch="${target#*/}"
+            out="dist/ddns-client_${os}_${arch}"
+            [ "$os" = windows ] && out="$out.exe"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" GOARM=7 \
+              go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "$out" ./cmd/ddns-client
+          done
+          (cd dist && sha256sum ddns-client_* > checksums.txt)
+          cat dist/checksums.txt
+      - name: Release notes
+        run: npx -y git-cliff@2 --latest --strip header -o ../RELEASE_NOTES.md
+        working-directory: client
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" dist/* --title "${{ github.ref_name }}" --notes-file ../RELEASE_NOTES.md
