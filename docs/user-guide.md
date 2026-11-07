@@ -24,7 +24,7 @@ Open **https://ddns.apps.joaoopereira.com**. Cloudflare Access asks you to sign
 in (with the method configured for the app, such as a one-time code by email).
 Only people allowed by the Access policy can open the dashboard.
 
-## Adding a machine (planned)
+## Adding a machine
 
 1. In the dashboard, turn on **Listen for new clients**. While it's off, new
    machines can't register at all.
@@ -33,17 +33,21 @@ Only people allowed by the Access policy can open the dashboard.
    **Linux / macOS** (as root or with sudo):
 
    ```bash
-   curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo bash
+   curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo sh
    ```
 
-   **Windows** (PowerShell as Administrator):
+   **Windows** (PowerShell, *Run as Administrator*):
 
    ```powershell
    irm https://ddns.apps.joaoopereira.com/install.ps1 | iex
    ```
 
-   The client is installed as a service (systemd, launchd or a Windows
-   service) and starts immediately.
+   The client is installed as a service (systemd on Linux, launchd on macOS,
+   a Windows service on Windows) and starts immediately. Running the
+   one-liner again repairs the install and updates it to the latest release.
+
+   > Until the dashboard ships, use the admin API to approve
+   > (`POST /api/admin/clients/:id/approve`, see [API reference](api.md)).
 3. Within a few seconds the machine appears under **Pending clients** with its
    public IP, hostname and OS.
 4. Click **Approve**, pick the **zone** (domain) and type the **record name**
@@ -75,10 +79,12 @@ and the client version.
 - **Revoke:** the client can no longer update DNS. The record is left as is.
 - **Delete:** removes the client, optionally deleting its DNS record too.
 
-To remove the software from a machine, run the installer with `uninstall`:
+To remove the software from a machine, run the installer with `uninstall`
+(this also deletes the machine's identity, so a reinstall registers as a new
+client):
 
 ```bash
-curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo bash -s -- uninstall
+curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo sh -s -- uninstall
 ```
 
 ```powershell
@@ -109,9 +115,9 @@ restart. If an upgrade fails, the error is shown on the client's row.
 
 - **The machine never shows up as pending.** Check that *Listen for new
   clients* is on and that its IP isn't under *Blocked IPs*. On the machine,
-  check the service logs: `journalctl -u ddns-client` (Linux),
-  `log show --predicate 'process == "ddns-client"'` (macOS), or the Windows
-  Event Viewer.
+  check the service logs: `journalctl -u ddns-client -f` (Linux),
+  `tail -f /var/log/ddns-client.log` (macOS), or Event Viewer → Windows
+  Logs → Application (Windows).
 - **A client shows offline.** The machine is off, has no internet, or the
   service stopped. Restart the service and it reconnects on its own.
 - **The record has the wrong IP.** The Worker uses the IP the heartbeat comes

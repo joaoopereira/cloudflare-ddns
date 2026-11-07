@@ -18,7 +18,10 @@ docs/user-guide.md for user-visible behavior.
 - "Remote update" = upgrading the client binary (target version in settings).
 - Hosted at https://ddns.apps.joaoopereira.com (Worker custom domain).
 - Dashboard auth: Cloudflare Access; admin API also validates the Access JWT.
-  Public paths: `/api/client/*`, `/install.sh`, `/install.ps1`, `/health`.
+  Public paths: `/api/client/*`, `/download/*`, `/install.sh`, `/install.ps1`, `/health`.
+- The repo is private, so clients never download from GitHub. Releases are
+  uploaded to the `ddns-releases` R2 bucket and served by the Worker at
+  `/download/<version>/<asset>` (`latest.txt` points at the newest).
 
 ## Layout
 - `server/`: Worker (Hono, TypeScript, D1). Tests: vitest + wrangler
@@ -35,7 +38,10 @@ docs/user-guide.md for user-visible behavior.
   `internal/api` HTTP client (IPv4-only dialer), `internal/config` identity
   file, `internal/upgrade` self-upgrade from GitHub Releases. Version via
   `-ldflags "-X main.version=..."`. Releases: tag `vX.Y.Z` (release-client skill).
-- `install/`: `install.sh` (systemd/launchd), `install.ps1` (Windows service).
+- `install/`: `install.sh` (POSIX sh; systemd/launchd), `install.ps1`
+  (Windows service). The Worker bundles them as text and replaces
+  `__DDNS_SERVER_URL__` with `PUBLIC_URL`. `DDNS_SERVER` overrides the server
+  and `DDNS_NO_SERVICE=1` skips service setup (for testing in containers).
 
 ## Checks (run before every push)
 - `cd server && npm run typecheck && npm test`

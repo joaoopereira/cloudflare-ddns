@@ -15,6 +15,12 @@ npx wrangler d1 create ddns
 Copy the `database_id` it prints into `server/wrangler.toml`, replacing
 `REPLACE_WITH_D1_DATABASE_ID`, and commit it. The id isn't a secret.
 
+Also create the R2 bucket that holds client releases:
+
+```bash
+npx wrangler r2 bucket create ddns-releases
+```
+
 ## 2. Give the Worker a Cloudflare API token
 
 The Worker uses this token to update DNS records. Create it at
@@ -33,7 +39,7 @@ npx wrangler secret put CF_API_TOKEN
 ## 3. Let GitHub Actions deploy
 
 Create a second token for deployments (the **Edit Cloudflare Workers** template,
-plus **Account → D1 → Edit**), then add these repository secrets under
+plus **Account → D1 → Edit** and **Account → Workers R2 Storage → Edit**), then add these repository secrets under
 **Settings → Secrets and variables → Actions**:
 
 | Secret | Value |
@@ -59,7 +65,7 @@ In **Zero Trust → Access → Applications → Add an application → Self-host
 2. Add a policy that allows only you (for example *Emails* → your address).
 3. Add **bypass** rules (or separate applications with a Bypass policy) for the
    public client paths so machines can reach them without logging in:
-   `/api/client/*`, `/install.sh`, `/install.ps1`.
+   `/api/client/*`, `/download/*`, `/install.sh`, `/install.ps1`, `/health`.
 
 Then give the Worker the values it needs to verify Access logins itself, so
 the admin API stays protected even if the Access configuration changes:
@@ -81,6 +87,18 @@ ALLOW_INSECURE_ADMIN=true
 ```
 
 `ALLOW_INSECURE_ADMIN` skips the Access check. Never set it in production.
+
+## 6. Publish the first client release
+
+Installers download the latest release from the Worker, so publish one before
+installing any machine:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`.github/workflows/release.yml` builds every platform, uploads the files to
+R2 and creates a GitHub Release.
 
 ## Manual deploy
 
