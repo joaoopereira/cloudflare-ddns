@@ -5,7 +5,7 @@ description: Deploy or check the deployment of the cloudflare-ddns Worker at ddn
 
 # Deploy cloudflare-ddns
 
-Production deploys happen automatically on merge to `development` via
+Production deploys happen automatically on every push to `development` via
 `.github/workflows/deploy.yml` (migrations first, then `wrangler deploy`).
 Deploying is a production change: only do it manually when the user asks.
 

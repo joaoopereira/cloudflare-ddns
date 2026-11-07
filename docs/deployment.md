@@ -1,7 +1,7 @@
 # Deployment
 
 One-time setup to run cloudflare-ddns on **ddns.apps.joaoopereira.com**. After
-this, every merge to `development` deploys automatically
+this, every push to `development` deploys automatically
 ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)).
 
 ## 1. Create the D1 database
