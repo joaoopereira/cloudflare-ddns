@@ -7,8 +7,8 @@ manage them remotely.
 
 The app runs at **https://ddns.apps.joaoopereira.com**.
 
-> **Status:** early development. The Worker, database, client API and admin
-> API are in place ([API reference](docs/api.md)); the client, installers and
+> **Status:** early development. The Worker (client and admin API,
+> [reference](docs/api.md)) and the Go client are in place; the installers and
 > dashboard are being built. See the
 > [backlog](https://github.com/joaoopereira/cloudflare-ddns/issues).
 
