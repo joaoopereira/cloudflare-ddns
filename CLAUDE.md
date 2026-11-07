@@ -30,7 +30,11 @@ docs/user-guide.md for user-visible behavior.
   in sync.
 - `server/migrations/`: D1 migrations, numbered `NNNN_name.sql`. Never edit
   a migration that has been merged; add a new one.
-- `client/`: Go agent, `cmd/ddns-client`. Version via `-ldflags "-X main.version=..."`.
+- `client/`: Go agent (stdlib + x/sys for the Windows service).
+  `cmd/ddns-client` entrypoint, `internal/agent` register/heartbeat loop,
+  `internal/api` HTTP client (IPv4-only dialer), `internal/config` identity
+  file, `internal/upgrade` self-upgrade from GitHub Releases. Version via
+  `-ldflags "-X main.version=..."`. Releases: tag `vX.Y.Z` (release-client skill).
 - `install/`: `install.sh` (systemd/launchd), `install.ps1` (Windows service).
 
 ## Checks (run before every push)
