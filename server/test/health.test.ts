@@ -1,32 +1,16 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
-import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/index";
+import { setupDb } from "./helpers";
 
-const migrationsDir = join(__dirname, "..", "migrations");
-
-let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 let db: D1Database;
+let dispose: () => Promise<void>;
 
 beforeAll(async () => {
-  // In-memory local D1 from wrangler.toml (persist: false keeps tests isolated).
-  proxy = await getPlatformProxy<{ DB: D1Database }>({ persist: false });
-  db = proxy.env.DB;
-  for (const file of readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort()) {
-    const sql = readFileSync(join(migrationsDir, file), "utf8");
-    // D1 exec() runs one statement per line, so split on statement boundaries.
-    const statements = sql
-      .replace(/--.*$/gm, "")
-      .split(/;\s*(?:\n|$)/)
-      .map((s) => s.replace(/\s+/g, " ").trim())
-      .filter(Boolean);
-    for (const statement of statements) await db.exec(statement);
-  }
+  ({ db, dispose } = await setupDb());
 });
 
 afterAll(async () => {
-  await proxy?.dispose();
+  await dispose?.();
 });
 
 describe("GET /health", () => {

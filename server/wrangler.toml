@@ -16,8 +16,22 @@ database_name = "ddns"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
+# Enforce the approval timeout every minute.
+[triggers]
+crons = ["* * * * *"]
+
+# Per-IP rate limit for client registrations.
+[[ratelimits]]
+name = "REGISTER_LIMITER"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
 [vars]
 PUBLIC_URL = "https://ddns.apps.joaoopereira.com"
 
 # Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
-#   CF_API_TOKEN  Cloudflare API token with Zone:Read + DNS:Edit on the managed zones
+#   CF_API_TOKEN        Cloudflare API token with Zone:Read + DNS:Edit on the managed zones
+#   ACCESS_TEAM_DOMAIN  Cloudflare Access team domain, e.g. myteam.cloudflareaccess.com
+#   ACCESS_AUD          Audience (AUD) tag of the Access application for the dashboard
+# Local development only (server/.dev.vars):
+#   ALLOW_INSECURE_ADMIN=true  skips the Access check on /api/admin

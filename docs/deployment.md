@@ -61,8 +61,26 @@ In **Zero Trust → Access → Applications → Add an application → Self-host
    public client paths so machines can reach them without logging in:
    `/api/client/*`, `/install.sh`, `/install.ps1`.
 
-The Worker also validates the Access JWT on admin endpoints, so the dashboard
-API stays protected even if the Access configuration changes.
+Then give the Worker the values it needs to verify Access logins itself, so
+the admin API stays protected even if the Access configuration changes:
+
+```bash
+npx wrangler secret put ACCESS_TEAM_DOMAIN   # e.g. myteam.cloudflareaccess.com
+npx wrangler secret put ACCESS_AUD           # the application's "Application Audience (AUD) Tag"
+```
+
+Until both are set, `/api/admin/*` answers `503`.
+
+## Local development
+
+Create `server/.dev.vars` (gitignored):
+
+```
+CF_API_TOKEN=<a token for a test zone>
+ALLOW_INSECURE_ADMIN=true
+```
+
+`ALLOW_INSECURE_ADMIN` skips the Access check. Never set it in production.
 
 ## Manual deploy
 

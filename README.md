@@ -7,8 +7,9 @@ manage them remotely.
 
 The app runs at **https://ddns.apps.joaoopereira.com**.
 
-> **Status:** early development. The foundation (Worker, database, CI) is in
-> place; the client, installers and dashboard are being built. See the
+> **Status:** early development. The Worker, database, client API and admin
+> API are in place ([API reference](docs/api.md)); the client, installers and
+> dashboard are being built. See the
 > [backlog](https://github.com/joaoopereira/cloudflare-ddns/issues).
 
 ## How it works
@@ -51,7 +52,7 @@ them, and managing records.
 | `server/migrations/` | D1 schema migrations |
 | `client/` | Go client agent (`cmd/ddns-client`) |
 | `install/` | `install.sh` / `install.ps1` one-liner installers |
-| `docs/` | User guide and deployment guide |
+| `docs/` | User guide, API reference and deployment guide |
 | `.claude/` | Project skills and settings for developing with Claude Code |
 
 ## Development

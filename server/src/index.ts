@@ -1,7 +1,10 @@
 import { Hono } from "hono";
-import type { Env } from "./env";
+import type { AppEnv, Env } from "./env";
+import { expirePendingClients } from "./lib/clients";
+import { adminApi } from "./routes/admin";
+import { clientApi } from "./routes/client";
 
-export const app = new Hono<{ Bindings: Env }>();
+export const app = new Hono<AppEnv>();
 
 app.get("/health", async (c) => {
   // A trivial query proves the D1 binding and schema are in place.
@@ -11,6 +14,18 @@ app.get("/health", async (c) => {
   return c.json({ ok: true, db: row !== null });
 });
 
-// Client API (epic #2) and admin API (#13) are added in follow-up PRs.
+app.route("/api/client", clientApi);
+app.route("/api/admin", adminApi);
 
-export default app;
+app.onError((err, c) => {
+  console.error(err);
+  return c.json({ error: "internal error" }, 500);
+});
+
+export default {
+  fetch: app.fetch,
+  // Cron trigger: enforce the approval timeout even when no client is calling.
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(expirePendingClients(env.DB));
+  },
+} satisfies ExportedHandler<Env>;

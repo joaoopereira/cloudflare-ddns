@@ -23,6 +23,11 @@ docs/user-guide.md for user-visible behavior.
 ## Layout
 - `server/`: Worker (Hono, TypeScript, D1). Tests: vitest + wrangler
   `getPlatformProxy` with an in-memory D1 (see `server/test/health.test.ts`).
+  Routes: `src/routes/client.ts` (public client API), `src/routes/admin.ts`
+  (Access-protected). Shared logic in `src/lib/`. Cloudflare API calls go
+  through `src/lib/cloudflare.ts`; tests fake it with `mockCloudflare()` in
+  `test/helpers.ts`. The HTTP contract is documented in docs/api.md; keep it
+  in sync.
 - `server/migrations/`: D1 migrations, numbered `NNNN_name.sql`. Never edit
   a migration that has been merged; add a new one.
 - `client/`: Go agent, `cmd/ddns-client`. Version via `-ldflags "-X main.version=..."`.
