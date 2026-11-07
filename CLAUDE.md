@@ -1,0 +1,42 @@
+# cloudflare-ddns: notes for Claude
+
+Self-hosted DDNS for Cloudflare zones. Read README.md for the architecture and
+docs/user-guide.md for user-visible behavior.
+
+## Key decisions (don't change without asking)
+- Clients never hold a Cloudflare token and never detect their own IP. The
+  Worker reads the IPv4 from `CF-Connecting-IP` on each heartbeat and updates
+  DNS with the `CF_API_TOKEN` Worker secret.
+- IPv4 / A records only. One client = one record. All zones are in one account.
+- Install takes zero input. Clients self-register as *pending*; the user
+  approves them in the dashboard and sets zone + record name there.
+- Registration is accepted only while the dashboard toggle
+  `registration_open` is on, and is rate-limited per IP. A pending client not
+  approved within `approval_timeout_seconds` (default 300) is rejected and its
+  IP goes to `blocked_ips` until the user unblocks it. Pending/rejected
+  clients must never touch DNS.
+- "Remote update" = upgrading the client binary (target version in settings).
+- Hosted at https://ddns.apps.joaoopereira.com (Worker custom domain).
+- Dashboard auth: Cloudflare Access; admin API also validates the Access JWT.
+  Public paths: `/api/client/*`, `/install.sh`, `/install.ps1`, `/health`.
+
+## Layout
+- `server/`: Worker (Hono, TypeScript, D1). Tests: vitest + wrangler
+  `getPlatformProxy` with an in-memory D1 (see `server/test/health.test.ts`).
+- `server/migrations/`: D1 migrations, numbered `NNNN_name.sql`. Never edit
+  a migration that has been merged; add a new one.
+- `client/`: Go agent, `cmd/ddns-client`. Version via `-ldflags "-X main.version=..."`.
+- `install/`: `install.sh` (systemd/launchd), `install.ps1` (Windows service).
+
+## Checks (run before every push)
+- `cd server && npm run typecheck && npm test`
+- `cd client && gofmt -l . && go vet ./... && go test ./...`
+
+## Workflow
+- Backlog lives in GitHub issues (epics #1-#6 with sub-issues). Reference the
+  issue in PR titles/bodies (`Closes #N`).
+- Default branch is `development`; merges there deploy to production.
+- When behavior a user can see changes, update docs/user-guide.md in the same
+  PR (drop the "(planned)" marker once a feature ships).
+- Project skills in `.claude/skills/`: run-locally, add-d1-migration,
+  implement-issue, deploy, release-client.

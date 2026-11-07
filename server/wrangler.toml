@@ -1,0 +1,23 @@
+name = "cloudflare-ddns"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# The app is served on a Worker custom domain.
+# The zone (joaoopereira.com) must be in the same Cloudflare account.
+routes = [
+  { pattern = "ddns.apps.joaoopereira.com", custom_domain = true }
+]
+
+# The D1 database. Create it once with `npx wrangler d1 create ddns`
+# and paste the returned database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "ddns"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+PUBLIC_URL = "https://ddns.apps.joaoopereira.com"
+
+# Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
+#   CF_API_TOKEN  Cloudflare API token with Zone:Read + DNS:Edit on the managed zones
