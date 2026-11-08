@@ -84,5 +84,5 @@ CI runs the same checks on every push
 
 ## Deployment
 
-Pushes to `development` deploy automatically once the one-time Cloudflare
-setup is done. See **[docs/deployment.md](docs/deployment.md)**.
+Each release deploys automatically once the one-time Cloudflare setup is
+done; pushes to `development` alone never reach production. See **[docs/deployment.md](docs/deployment.md)**.

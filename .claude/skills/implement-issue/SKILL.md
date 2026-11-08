@@ -25,4 +25,4 @@ description: Implement a cloudflare-ddns backlog issue end to end (read issue, c
 7. Commit using Conventional Commits, e.g.
    `feat(server): add client registration endpoint (#10)` with `Closes #10`
    in the body (see CLAUDE.md for types and scopes), then push to `development`. That
-   triggers CI and the production deploy, so the checks must pass first.
+   triggers CI (not a deploy: only releases deploy), so the checks must pass first.

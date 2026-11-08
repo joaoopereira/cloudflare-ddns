@@ -27,5 +27,7 @@ upgrades point at, so a broken release breaks every machine that upgrades.
    `git commit -m "chore(release): vX.Y.Z" CHANGELOG.md`.
    Release notes for the tag: `npx git-cliff --latest --strip header`.
 4. Verify the release assets exist and the checksums match.
-5. Rolling the fleet forward is a separate step: set the target version in the
+5. The release workflow then deploys that tag of the Worker and dashboard
+   to production (deploy.yml); check `/health` reports the new version.
+6. Rolling the fleet forward is a separate step: set the target version in the
    dashboard (one client first, then all).

@@ -5,9 +5,13 @@ description: Deploy or check the deployment of the cloudflare-ddns Worker at ddn
 
 # Deploy cloudflare-ddns
 
-Production deploys happen automatically on every push to `development` via
-`.github/workflows/deploy.yml` (migrations first, then `wrangler deploy`).
-Deploying is a production change: only do it manually when the user asks.
+Production only ever runs a released version. The Release workflow
+(`.github/workflows/release.yml`) tags, publishes the client and then calls
+`.github/workflows/deploy.yml` for that tag (migrations first, then
+`wrangler deploy`). Pushes to `development` don't deploy. To redeploy an
+existing release, run the Deploy workflow with `version: vX.Y.Z` (GitHub MCP
+`actions_run_trigger`, `workflow_id: deploy.yml`). Never deploy unreleased
+code, and only deploy or release when the user asks.
 
 1. Prerequisites (docs/deployment.md): GitHub repo secrets
    `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (deploy), plus

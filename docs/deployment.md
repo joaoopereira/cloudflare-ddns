@@ -1,8 +1,10 @@
 # Deployment
 
 One-time setup to run cloudflare-ddns on **ddns.apps.joaoopereira.com**. After
-this, every push to `development` deploys automatically
-([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)).
+this, every release deploys automatically: production only ever runs a
+released version, never unreleased commits from `development`
+([`.github/workflows/release.yml`](../.github/workflows/release.yml) calls
+[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)).
 
 ## 1. D1 database and R2 bucket (done)
 
@@ -62,11 +64,15 @@ New repository secret**:
 | `ACCESS_TEAM_DOMAIN` | e.g. `myteam.cloudflareaccess.com` |
 | `ACCESS_AUD` | the Access application's AUD tag |
 
-On every push to `development`, the deploy workflow applies D1 migrations,
-builds the dashboard, deploys the Worker, and copies the last three into
-Worker secrets (`CF_API_TOKEN`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). Until the
-first two exist it skips with a warning. To deploy right away, run the
-**Deploy** workflow manually (Actions → Deploy → Run workflow).
+When a release is cut (Actions → Release client → Run workflow with a version
+like `v1.2.0`), the release workflow tags `development`, publishes the client
+binaries and then runs the deploy workflow for that tag: it applies D1
+migrations, builds the dashboard, deploys the Worker, and copies the last
+three secrets into Worker secrets (`CF_API_TOKEN`, `ACCESS_TEAM_DOMAIN`,
+`ACCESS_AUD`). Until the first two exist it skips with a warning. To redeploy
+an existing release (for example after changing a secret), run the **Deploy**
+workflow manually (Actions → Deploy → Run workflow) with its tag; it only
+accepts release tags.
 
 The custom domain `ddns.apps.joaoopereira.com` is set in `wrangler.toml`; the
 first deploy creates its DNS record and certificate.
@@ -90,10 +96,9 @@ R2 and creates a GitHub Release.
 ## 6. Check it
 
 - `https://ddns.apps.joaoopereira.com/health` returns `{"ok":true,"db":true,"version":"v1.0.0","commit":"abc1234"}`.
-  The deploy workflow sets `version` (latest git tag) and `commit` (short SHA)
-  as the Worker vars `APP_VERSION` and `APP_COMMIT`, and builds the dashboard
-  with the same values. A release cut later on the same commit shows up after
-  the next deploy.
+  The deploy workflow sets `version` (the release tag) and `commit` (short
+  SHA) as the Worker vars `APP_VERSION` and `APP_COMMIT`, and builds the
+  dashboard with the same values.
 - Opening `https://ddns.apps.joaoopereira.com` asks you to sign in, then shows the dashboard.
 - Click **Listen for new clients**, run the one-liner on a machine, approve it.
 
