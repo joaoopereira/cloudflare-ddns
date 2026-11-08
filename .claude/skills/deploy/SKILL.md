@@ -9,10 +9,12 @@ Production deploys happen automatically on every push to `development` via
 `.github/workflows/deploy.yml` (migrations first, then `wrangler deploy`).
 Deploying is a production change: only do it manually when the user asks.
 
-1. Prerequisites (docs/deployment.md): real `database_id` in
-   `server/wrangler.toml`, `CF_API_TOKEN` Worker secret, repo secrets
-   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. If the workflow logs
-   "skipping deploy", one of these is missing.
+1. Prerequisites (docs/deployment.md): GitHub repo secrets
+   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (deploy), plus
+   `DNS_API_TOKEN`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, which the workflow
+   copies into Worker secrets on each deploy. Never set Worker secrets by
+   hand; change the GitHub secret and redeploy. If the workflow logs
+   "skipping", one of these is missing.
 2. Before deploying: checks from CLAUDE.md pass, and
    `cd server && npx wrangler deploy --dry-run --outdir dist` succeeds.
 3. Manual deploy (needs Cloudflare credentials in the environment):

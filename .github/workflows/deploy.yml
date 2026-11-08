@@ -2,7 +2,10 @@ name: Deploy
 
 # Deploys the Worker to https://ddns.apps.joaoopereira.com on every push to
 # the default branch, after applying any pending D1 migrations.
-# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Optional secrets DNS_API_TOKEN, ACCESS_TEAM_DOMAIN and ACCESS_AUD are copied
+# into the Worker's secrets (CF_API_TOKEN, ACCESS_TEAM_DOMAIN, ACCESS_AUD) on
+# every deploy, so they only ever need to be set in GitHub
 # (see docs/deployment.md).
 
 on:
@@ -59,3 +62,20 @@ jobs:
       - name: Deploy Worker
         if: steps.check.outputs.ready == 'true'
         run: npx wrangler deploy
+      - name: Sync Worker secrets
+        if: steps.check.outputs.ready == 'true'
+        env:
+          DNS_API_TOKEN: ${{ secrets.DNS_API_TOKEN }}
+          ACCESS_TEAM_DOMAIN: ${{ secrets.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ secrets.ACCESS_AUD }}
+        run: |
+          put() {
+            if [ -n "$2" ]; then
+              printf '%s' "$2" | npx wrangler secret put "$1"
+            else
+              echo "::warning::$3 is not set; skipping Worker secret $1 (see docs/deployment.md)."
+            fi
+          }
+          put CF_API_TOKEN "$DNS_API_TOKEN" DNS_API_TOKEN
+          put ACCESS_TEAM_DOMAIN "$ACCESS_TEAM_DOMAIN" ACCESS_TEAM_DOMAIN
+          put ACCESS_AUD "$ACCESS_AUD" ACCESS_AUD

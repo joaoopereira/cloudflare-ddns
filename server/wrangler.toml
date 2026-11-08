@@ -8,12 +8,11 @@ routes = [
   { pattern = "ddns.apps.joaoopereira.com", custom_domain = true }
 ]
 
-# The D1 database. Create it once with `npx wrangler d1 create ddns`
-# and paste the returned database_id below.
+# The D1 database (created 2026-11-08 in WEUR).
 [[d1_databases]]
 binding = "DB"
 database_name = "ddns"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "5688d267-ba95-4625-beec-287ca46fd8ab"
 migrations_dir = "migrations"
 
 # Client release binaries (uploaded by .github/workflows/release.yml).
