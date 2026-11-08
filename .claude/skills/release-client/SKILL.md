@@ -12,7 +12,11 @@ upgrades point at, so a broken release breaks every machine that upgrades.
    (`cd client && go vet ./... && go test ./...`).
 2. Pick the next semver version (`vMAJOR.MINOR.PATCH`). Ask the user before
    tagging: pushing a tag publishes a release.
-3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. Start the release. Cloud sessions can't push tags, so run the workflow
+   manually instead: GitHub MCP `actions_run_trigger` with `run_workflow`,
+   `workflow_id: release.yml`, `ref: development`, `inputs: {version: "vX.Y.Z"}`.
+   It tags `development` itself. (Pushing a tag, `git tag vX.Y.Z && git push
+   origin vX.Y.Z`, also works from a local clone.)
    `.github/workflows/release.yml` builds linux (amd64/arm64/arm),
    darwin (amd64/arm64) and windows (amd64/arm64) as
    `ddns-client_<os>_<arch>[.exe]`, writes `checksums.txt`, and publishes a

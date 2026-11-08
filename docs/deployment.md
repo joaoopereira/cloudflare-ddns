@@ -80,6 +80,10 @@ installing any machine:
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
+Or, without a local clone: **Actions → Release client → Run workflow**, pick
+`development` and enter the version (for example `v0.1.0`); the workflow
+creates the tag itself.
+
 `.github/workflows/release.yml` builds every platform, uploads the files to
 R2 and creates a GitHub Release.
 

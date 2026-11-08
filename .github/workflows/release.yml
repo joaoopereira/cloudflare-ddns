@@ -1,14 +1,24 @@
 name: Release client
 
-# Push a tag like v1.2.3 to build ddns-client for every supported platform,
-# upload the binaries and checksums.txt to the ddns-releases R2 bucket (served
-# by the Worker at /download/<version>/<asset>, which installers and remote
-# upgrades use), and publish a GitHub Release with the same files.
+# Builds ddns-client for every supported platform, uploads the binaries and
+# checksums.txt to the ddns-releases R2 bucket (served by the Worker at
+# /download/<version>/<asset>, which installers and remote upgrades use), and
+# publishes a GitHub Release with the same files.
+#
+# Start it either way:
+# - push a tag like v1.2.3, or
+# - run it manually (Actions → Release client → Run workflow) with a version;
+#   it then tags the selected branch itself and pushes that tag.
 # Requires the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
 
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. v1.2.3 (tags the selected branch)"
+        required: true
 
 permissions:
   contents: write
@@ -23,13 +33,32 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Resolve version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            VERSION="$INPUT_VERSION"
+            if ! printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::version must look like v1.2.3, got '$VERSION'"; exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+              echo "::error::tag $VERSION already exists"; exit 1
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$VERSION" -m "$VERSION"
+            # Pushed with GITHUB_TOKEN, so it doesn't start this workflow again.
+            git push origin "refs/tags/$VERSION"
+          else
+            VERSION="$GITHUB_REF_NAME"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - uses: actions/setup-go@v5
         with:
           go-version-file: client/go.mod
       - run: go vet ./... && go test ./...
       - name: Build binaries
-        env:
-          VERSION: ${{ github.ref_name }}
         run: |
           mkdir -p dist
           for target in linux/amd64 linux/arm64 linux/arm darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
@@ -45,7 +74,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          VERSION: ${{ github.ref_name }}
         run: |
           for f in dist/*; do
             npx -y wrangler@4 r2 object put "ddns-releases/${VERSION}/$(basename "$f")" --file "$f" --remote
@@ -55,8 +83,7 @@ jobs:
           npx -y wrangler@4 r2 object put ddns-releases/latest.txt --file dist-latest.txt --content-type text/plain --remote
       - name: Release notes
         run: npx -y git-cliff@2 --latest --strip header -o ../RELEASE_NOTES.md
-        working-directory: client
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" dist/* --title "${{ github.ref_name }}" --notes-file ../RELEASE_NOTES.md
+        run: gh release create "$VERSION" dist/* --title "$VERSION" --notes-file ../RELEASE_NOTES.md
