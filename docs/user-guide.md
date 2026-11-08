@@ -78,7 +78,7 @@ phone, the IP, hostname and version move under the client's name and the
 other columns are hidden.
 
 Above the table, **Installed** sums up which client versions are running
-(for example "3 on v1.0.0, 1 on v0.9.0").
+(for example "3 on 1.0.0, 1 on 0.9.0").
 
 ## Changing or removing a client
 
@@ -118,8 +118,11 @@ DNS errors, upgrades and settings changes.
 
 ## App version
 
+Versions are shown without the "v" prefix (`1.1.0`); release tags keep it
+(`v1.1.0`).
+
 The footer of every page shows the dashboard version and commit (for example
-`DDNS v1.1.0 · abc1234`). If a newer version was deployed while the page was
+`DDNS 1.1.0 · abc1234`). If a newer version was deployed while the page was
 open, the footer says so; click **Reload** to load it. `/health` reports the
 same version.
 
@@ -129,8 +132,9 @@ Above the clients table the dashboard shows the latest released client
 version. **Upgrade all** moves every client to it; **Upgrade to …** in a row's
 **⋯** menu upgrades only that machine (handy for trying a release on one
 machine first). Clients pick it up on their next heartbeat, verify the
-download, replace themselves and restart; the Version column shows
-`→ vX.Y.Z` until they're done. If an upgrade fails, the error is shown on the
+download, replace themselves and restart. Until a client reports the new
+version, its row shows an **Upgrading to X.Y.Z** badge under its status, at
+every screen width. If an upgrade fails, the error is shown on the
 client's row and the client keeps running the old version.
 
 ## Settings

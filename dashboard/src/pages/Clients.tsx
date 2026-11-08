@@ -5,7 +5,7 @@ import { InstallCommands } from "../components/InstallCommands";
 import { NameDialog } from "../components/NameDialog";
 import { RecordDialog } from "../components/RecordDialog";
 import { RowMenu } from "../components/RowMenu";
-import { ago, clientLabel, countdown, fullDate, osLabel, versionSummary } from "../format";
+import { ago, clientLabel, countdown, fullDate, osLabel, ver, versionSummary } from "../format";
 import { useAction, usePolling, useTick } from "../hooks";
 
 export function ClientsPage({ notify }: PageProps) {
@@ -120,7 +120,7 @@ export function ClientsPage({ notify }: PageProps) {
               {active.length > 0 && <span>Installed: {versionSummary(active.map((c) => c.version))}</span>}
               {latest && (
                 <span>
-                  Latest release <strong>{latest}</strong>
+                  Latest release <strong>{ver(latest)}</strong>
                 </span>
               )}
               {latest && outdated.length > 0 && (
@@ -130,7 +130,7 @@ export function ClientsPage({ notify }: PageProps) {
                   onClick={() =>
                     run(async () => {
                       await api.updateSettings({ target_client_version: latest });
-                      notify(`Upgrading ${outdated.length} client(s) to ${latest}`, "info");
+                      notify(`Upgrading ${outdated.length} client(s) to ${ver(latest)}`, "info");
                       await reload();
                     })
                   }
@@ -166,6 +166,7 @@ export function ClientsPage({ notify }: PageProps) {
                     busy={busy}
                     run={run}
                     reload={reload}
+                    notify={notify}
                     onEdit={() => setDialog({ client: c, mode: "edit" })}
                     onRename={() => setDialog({ client: c, mode: "rename" })}
                   />
@@ -211,6 +212,7 @@ function ClientRow({
   busy,
   run,
   reload,
+  notify,
   onEdit,
   onRename,
 }: {
@@ -219,10 +221,14 @@ function ClientRow({
   busy: boolean;
   run: (fn: () => Promise<unknown>) => Promise<boolean>;
   reload: () => Promise<void>;
+  notify: PageProps["notify"];
   onEdit: () => void;
   onRename: () => void;
 }) {
-  const upgrading = c.effective_target_version && c.effective_target_version !== c.version;
+  const upgrading =
+    c.status === "approved" && !!c.effective_target_version && c.effective_target_version !== c.version
+      ? c.effective_target_version
+      : null;
   const status =
     c.status === "revoked" ? (
       <span className="badge muted-badge">Revoked</span>
@@ -243,7 +249,6 @@ function ClientRow({
         <div className="show-sm muted small">
           {c.name && c.hostname ? `${c.hostname} · ` : ""}
           <VersionLabel version={c.version} latest={c.status === "approved" ? latest : null} />
-          {upgrading && ` → ${c.effective_target_version}`}
         </div>
         {c.last_error && (
           <div className="error-text small" title={c.last_error}>
@@ -257,6 +262,14 @@ function ClientRow({
         <div className="muted small" title={fullDate(c.last_seen)}>
           seen {ago(c.last_seen)}
         </div>
+        {upgrading && (
+          <div
+            className="badge info upgrading"
+            title={`Upgrade to ${ver(upgrading)} requested. The client installs it on its next heartbeat and restarts.`}
+          >
+            <span className="spinner" aria-hidden /> Upgrading to {ver(upgrading)}
+          </div>
+        )}
       </td>
       <td className="hide-sm" title={fullDate(c.last_ip_change)}>
         {ago(c.last_ip_change)}
@@ -269,7 +282,6 @@ function ClientRow({
         <div>
           <VersionLabel version={c.version} latest={c.status === "approved" ? latest : null} />
         </div>
-        {upgrading && <div className="muted small">→ {c.effective_target_version}</div>}
       </td>
       <td className="row-actions">
         <RowMenu label={`Actions for ${clientLabel(c)}`}>
@@ -289,9 +301,16 @@ function ClientRow({
                 <button
                   role="menuitem"
                   disabled={busy}
-                  onClick={() => (close(), run(async () => (await api.upgrade(c.id, latest), reload())))}
+                  onClick={() => {
+                    close();
+                    run(async () => {
+                      await api.upgrade(c.id, latest);
+                      notify(`Upgrading ${clientLabel(c)} to ${ver(latest)}`, "info");
+                      await reload();
+                    });
+                  }}
                 >
-                  Upgrade to {latest}
+                  Upgrade to {ver(latest)}
                 </button>
               )}
               {c.target_version && (
@@ -343,9 +362,9 @@ function VersionLabel({ version, latest }: { version: string | null; latest: str
   if (!version) return <span className="muted">unknown</span>;
   return (
     <span className="version">
-      {version}
+      {ver(version)}
       {latest && version !== latest && (
-        <span className="badge warn tiny" title={`Latest release is ${latest}`}>
+        <span className="badge warn tiny" title={`Latest release is ${ver(latest)}`}>
           outdated
         </span>
       )}

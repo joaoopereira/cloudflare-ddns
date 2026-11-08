@@ -27,10 +27,20 @@ export function clientLabel(c: { name?: string | null; hostname?: string | null;
   return c.name || c.hostname || c.id.slice(0, 8);
 }
 
-/** "3 on v1.0.0, 1 on v0.9.0", most common version first. */
+/** Version for display, without the leading "v" ("v1.1.0" -> "1.1.0"). */
+export function ver(v: string): string;
+export function ver(v: string | null | undefined): string | null;
+export function ver(v: string | null | undefined): string | null {
+  return v ? v.replace(/^v(?=\d)/, "") : null;
+}
+
+/** "3 on 1.0.0, 1 on 0.9.0", most common version first. */
 export function versionSummary(versions: (string | null)[]): string {
   const counts = new Map<string, number>();
-  for (const v of versions) counts.set(v ?? "unknown", (counts.get(v ?? "unknown") ?? 0) + 1);
+  for (const v of versions) {
+    const key = ver(v) ?? "unknown";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
   return [...counts]
     .sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0], undefined, { numeric: true }))
     .map(([v, n]) => `${n} on ${v}`)

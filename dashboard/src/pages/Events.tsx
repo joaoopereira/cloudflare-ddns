@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import type { PageProps } from "../App";
 import { api, type Client, type EventRow } from "../api";
-import { ago, clientLabel, fullDate } from "../format";
+import { ago, clientLabel, fullDate, ver } from "../format";
 import { usePolling } from "../hooks";
 
 const LABELS: Record<string, string> = {
@@ -26,7 +26,9 @@ function describe(e: EventRow): string {
     case "ip_changed":
       return `${d.record}: ${d.from ?? "none"} → ${d.to}`;
     case "upgraded":
-      return `${d.from} → ${d.to}`;
+      return `${ver(d.from as string) ?? "?"} → ${ver(d.to as string)}`;
+    case "upgrade_requested":
+      return d.version ? `to ${ver(d.version as string)}${d.by ? ` by ${d.by}` : ""}` : `override cleared${d.by ? ` by ${d.by}` : ""}`;
     case "approved":
       return `${d.record}${d.by ? ` by ${d.by}` : ""}`;
     case "renamed":
@@ -37,7 +39,7 @@ function describe(e: EventRow): string {
     default:
       return Object.entries(d)
         .filter(([k]) => k !== "by")
-        .map(([k, v]) => `${k}: ${String(v)}`)
+        .map(([k, v]) => `${k}: ${typeof v === "string" ? ver(v) : String(v)}`)
         .join(", ");
   }
 }

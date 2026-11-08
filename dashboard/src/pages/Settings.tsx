@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ver } from "../format";
 import type { PageProps } from "../App";
 import { api, type Settings } from "../api";
 import { useAction } from "../hooks";
@@ -60,7 +61,7 @@ export function SettingsPage({ notify }: PageProps) {
       <p className="muted small">
         Clients send a heartbeat every {settings.heartbeat_interval_seconds}s and count as offline after{" "}
         {settings.heartbeat_interval_seconds * 3}s without one.
-        {settings.target_client_version && <> All clients are being upgraded to {settings.target_client_version}.</>}
+        {settings.target_client_version && <> All clients are being upgraded to {ver(settings.target_client_version)}.</>}
       </p>
     </section>
   );

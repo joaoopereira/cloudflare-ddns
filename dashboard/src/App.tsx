@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, health, type Health } from "./api";
+import { ver } from "./format";
 import { BlockedPage } from "./pages/Blocked";
 import { ClientsPage } from "./pages/Clients";
 import { EventsPage } from "./pages/Events";
@@ -96,7 +97,7 @@ export function App() {
 const VERSION_CHECK_MS = 5 * 60_000;
 
 /**
- * App version from the build (e.g. "DDNS v1.1.0 · abc1234"). If the Worker
+ * App version from the build (e.g. "DDNS 1.1.0 · abc1234"). If the Worker
  * reports a different commit, this tab is running an old bundle: offer a reload.
  */
 function Footer() {
@@ -110,13 +111,13 @@ function Footer() {
   const stale = !!server?.commit && !!__APP_COMMIT__ && server.commit !== __APP_COMMIT__;
   return (
     <footer className="footer">
-      <span title={server ? `Server ${server.version}${server.commit ? ` · ${server.commit}` : ""}` : undefined}>
-        DDNS {__APP_VERSION__}
+      <span title={server ? `Server ${ver(server.version)}${server.commit ? ` · ${server.commit}` : ""}` : undefined}>
+        DDNS {ver(__APP_VERSION__)}
         {__APP_COMMIT__ && <span className="mono"> · {__APP_COMMIT__}</span>}
       </span>
       {stale && (
         <span className="stale">
-          A newer version ({server.version} · {server.commit}) is deployed.{" "}
+          A newer version ({ver(server.version)} · {server.commit}) is deployed.{" "}
           <button className="small-btn" onClick={() => location.reload()}>
             Reload
           </button>
