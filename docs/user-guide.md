@@ -46,9 +46,10 @@ Only people allowed by the Access policy can open the dashboard.
 
 3. Within a few seconds the machine appears under **Pending approval** with
    its public IP, hostname and OS, plus a countdown to the approval timeout.
-4. Click **Approve…**, pick the **zone** (domain) and type the **record name**
-   (for example `home` for `home.example.com`, or `@` for the zone itself).
-   Click **Approve**. If you don't recognise the machine, click **Reject**:
+4. Click **Approve…**. Optionally give the machine a **name** (for example
+   "Home NAS"; it starts as the machine's hostname), then pick the **zone**
+   (domain) and type the **record name** (for example `home` for
+   `home.example.com`, or `@` for the zone itself). Click **Approve**. If you don't recognise the machine, click **Reject**:
    it's refused and its IP is blocked.
 5. Click **Stop listening** when you're done.
 
@@ -67,18 +68,26 @@ blocked from registering too.
 
 ## The clients list
 
-For each client you see its record, the current IP, online or offline, when
-the client was last seen, when the IP last changed, the machine (hostname and
-OS) and the client version. A ⚠ line under the record shows the last error,
-such as a failed DNS update or upgrade. The page refreshes every few seconds.
-On a phone, some columns are hidden; scroll the table sideways to see them.
+For each client you see its name and record, the current IP, online or
+offline, when the client was last seen, when the IP last changed, the machine
+(hostname and OS) and the installed client version. A client without a name
+is shown by its hostname. Versions behind the latest release are marked
+**outdated**. A ⚠ line under the record shows the last error, such as a
+failed DNS update or upgrade. The page refreshes every few seconds. On a
+phone, the IP, hostname and version move under the client's name and the
+other columns are hidden.
+
+Above the table, **Installed** sums up which client versions are running
+(for example "3 on v1.0.0, 1 on v0.9.0").
 
 ## Changing or removing a client
 
 Use the **⋯** menu on a client's row:
 
-- **Change record…:** move an approved client to another zone or record name.
-  The new record is written on its next heartbeat; the old one is left as is.
+- **Edit name and record…:** rename an approved client, or move it to another
+  zone or record name. A new record is written on its next heartbeat; the old
+  one is left as is. Clear the name to show the hostname again.
+- **Rename…:** set the name of a revoked client.
 - **Revoke:** the client can no longer update DNS. The record is left as is.
 - **Delete:** removes the client, optionally deleting its DNS record too.
 
@@ -103,8 +112,16 @@ Click **Unblock** to allow it again. A client behind that IP reappears under
 
 ## Activity
 
-**Activity** lists recent events: registrations, approvals, rejections,
-blocks and unblocks, IP changes, DNS errors, upgrades and settings changes.
+**Activity** lists recent events, each with the client it's about:
+registrations, approvals, renames, rejections, blocks and unblocks, IP changes,
+DNS errors, upgrades and settings changes.
+
+## App version
+
+The footer of every page shows the dashboard version and commit (for example
+`DDNS v1.1.0 · abc1234`). If a newer version was deployed while the page was
+open, the footer says so; click **Reload** to load it. `/health` reports the
+same version.
 
 ## Upgrading clients
 

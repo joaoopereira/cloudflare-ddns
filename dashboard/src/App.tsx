@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api";
+import { api, health, type Health } from "./api";
 import { BlockedPage } from "./pages/Blocked";
 import { ClientsPage } from "./pages/Clients";
 import { EventsPage } from "./pages/Events";
@@ -82,11 +82,46 @@ export function App() {
           <Page notify={notify} />
         )}
       </main>
+      <Footer />
       {toast && (
         <div className={`toast ${toast.kind}`} role="status" onClick={() => setToast(null)}>
           {toast.msg}
         </div>
       )}
     </div>
+  );
+}
+
+/** Every 5 minutes, check which version the Worker is running. */
+const VERSION_CHECK_MS = 5 * 60_000;
+
+/**
+ * App version from the build (e.g. "DDNS v1.1.0 · abc1234"). If the Worker
+ * reports a different commit, this tab is running an old bundle: offer a reload.
+ */
+function Footer() {
+  const [server, setServer] = useState<Health | null>(null);
+  useEffect(() => {
+    const check = () => health().then(setServer, () => undefined);
+    check();
+    const t = setInterval(check, VERSION_CHECK_MS);
+    return () => clearInterval(t);
+  }, []);
+  const stale = !!server?.commit && !!__APP_COMMIT__ && server.commit !== __APP_COMMIT__;
+  return (
+    <footer className="footer">
+      <span title={server ? `Server ${server.version}${server.commit ? ` · ${server.commit}` : ""}` : undefined}>
+        DDNS {__APP_VERSION__}
+        {__APP_COMMIT__ && <span className="mono"> · {__APP_COMMIT__}</span>}
+      </span>
+      {stale && (
+        <span className="stale">
+          A newer version ({server.version} · {server.commit}) is deployed.{" "}
+          <button className="small-btn" onClick={() => location.reload()}>
+            Reload
+          </button>
+        </span>
+      )}
+    </footer>
   );
 }

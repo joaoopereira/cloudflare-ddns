@@ -2,8 +2,10 @@ import { useCallback, useState } from "react";
 import type { PageProps } from "../App";
 import { api, type Client } from "../api";
 import { InstallCommands } from "../components/InstallCommands";
+import { NameDialog } from "../components/NameDialog";
 import { RecordDialog } from "../components/RecordDialog";
-import { ago, countdown, fullDate, osLabel } from "../format";
+import { RowMenu } from "../components/RowMenu";
+import { ago, clientLabel, countdown, fullDate, osLabel, versionSummary } from "../format";
 import { useAction, usePolling, useTick } from "../hooks";
 
 export function ClientsPage({ notify }: PageProps) {
@@ -20,7 +22,7 @@ export function ClientsPage({ notify }: PageProps) {
   );
   const { data, error, reload } = usePolling(load, 5000);
   const { busy, run } = useAction(notify);
-  const [dialog, setDialog] = useState<{ client: Client; mode: "approve" | "edit" } | null>(null);
+  const [dialog, setDialog] = useState<{ client: Client; mode: "approve" | "edit" | "rename" } | null>(null);
   useTick();
 
   if (error && !data) return <div className="card empty">Failed to load: {error.message}</div>;
@@ -71,7 +73,7 @@ export function ClientsPage({ notify }: PageProps) {
             {pending.map((c) => (
               <div className="card pending" key={c.id}>
                 <div className="pending-head">
-                  <strong>{c.hostname ?? c.id.slice(0, 8)}</strong>
+                  <strong>{clientLabel(c)}</strong>
                   {c.approval_deadline && (
                     <span className="badge warn" title="Time left before it is rejected and its IP blocked">
                       {countdown(c.approval_deadline)}
@@ -79,12 +81,20 @@ export function ClientsPage({ notify }: PageProps) {
                   )}
                 </div>
                 <dl>
+                  {c.name && c.hostname && (
+                    <>
+                      <dt>Hostname</dt>
+                      <dd>{c.hostname}</dd>
+                    </>
+                  )}
                   <dt>Public IP</dt>
                   <dd className="mono">{c.registered_ip}</dd>
                   <dt>System</dt>
                   <dd>{osLabel(c.os, c.arch)}</dd>
                   <dt>Version</dt>
-                  <dd>{c.version ?? "?"}</dd>
+                  <dd>
+                    <VersionLabel version={c.version} latest={latest} />
+                  </dd>
                   <dt>Seen</dt>
                   <dd title={fullDate(c.first_seen)}>{ago(c.first_seen)}</dd>
                 </dl>
@@ -105,10 +115,15 @@ export function ClientsPage({ notify }: PageProps) {
       <section>
         <div className="section-row">
           <h3 className="section-title">Clients</h3>
-          {latest && (
-            <div className="muted small">
-              Latest release <strong>{latest}</strong>
-              {outdated.length > 0 && (
+          {(latest || active.length > 0) && (
+            <div className="muted small versions-summary">
+              {active.length > 0 && <span>Installed: {versionSummary(active.map((c) => c.version))}</span>}
+              {latest && (
+                <span>
+                  Latest release <strong>{latest}</strong>
+                </span>
+              )}
+              {latest && outdated.length > 0 && (
                 <button
                   className="ghost small-btn"
                   disabled={busy}
@@ -133,8 +148,8 @@ export function ClientsPage({ notify }: PageProps) {
             <table>
               <thead>
                 <tr>
-                  <th>Record</th>
-                  <th>IP</th>
+                  <th>Client</th>
+                  <th className="hide-sm">IP</th>
                   <th>Status</th>
                   <th className="hide-sm">IP updated</th>
                   <th className="hide-sm">Machine</th>
@@ -152,6 +167,7 @@ export function ClientsPage({ notify }: PageProps) {
                     run={run}
                     reload={reload}
                     onEdit={() => setDialog({ client: c, mode: "edit" })}
+                    onRename={() => setDialog({ client: c, mode: "rename" })}
                   />
                 ))}
               </tbody>
@@ -160,10 +176,22 @@ export function ClientsPage({ notify }: PageProps) {
         )}
       </section>
 
-      {dialog && (
+      {dialog?.mode === "rename" && (
+        <NameDialog
+          client={dialog.client}
+          onClose={() => setDialog(null)}
+          onDone={() => {
+            setDialog(null);
+            reload();
+          }}
+          notify={notify}
+        />
+      )}
+      {dialog && dialog.mode !== "rename" && (
         <RecordDialog
           client={dialog.client}
-          title={dialog.mode === "approve" ? "Approve client" : "Change record"}
+          approving={dialog.mode === "approve"}
+          title={dialog.mode === "approve" ? "Approve client" : "Edit client"}
           submitLabel={dialog.mode === "approve" ? "Approve" : "Save"}
           onClose={() => setDialog(null)}
           onDone={() => {
@@ -184,6 +212,7 @@ function ClientRow({
   run,
   reload,
   onEdit,
+  onRename,
 }: {
   client: Client;
   latest: string | null;
@@ -191,8 +220,8 @@ function ClientRow({
   run: (fn: () => Promise<unknown>) => Promise<boolean>;
   reload: () => Promise<void>;
   onEdit: () => void;
+  onRename: () => void;
 }) {
-  const [menu, setMenu] = useState(false);
   const upgrading = c.effective_target_version && c.effective_target_version !== c.version;
   const status =
     c.status === "revoked" ? (
@@ -207,15 +236,22 @@ function ClientRow({
 
   return (
     <tr>
-      <td>
-        <div className="mono strong">{c.record_name}</div>
+      <td className="client-cell">
+        <div className="strong">{clientLabel(c)}</div>
+        <div className="mono small">{c.record_name}</div>
+        <div className="show-sm mono small">{c.current_ip ?? <span className="muted">pending first update</span>}</div>
+        <div className="show-sm muted small">
+          {c.name && c.hostname ? `${c.hostname} · ` : ""}
+          <VersionLabel version={c.version} latest={c.status === "approved" ? latest : null} />
+          {upgrading && ` → ${c.effective_target_version}`}
+        </div>
         {c.last_error && (
           <div className="error-text small" title={c.last_error}>
             ⚠ {c.last_error}
           </div>
         )}
       </td>
-      <td className="mono">{c.current_ip ?? <span className="muted">pending first update</span>}</td>
+      <td className="mono hide-sm">{c.current_ip ?? <span className="muted">pending first update</span>}</td>
       <td>
         {status}
         <div className="muted small" title={fullDate(c.last_seen)}>
@@ -230,55 +266,89 @@ function ClientRow({
         <div className="muted small">{osLabel(c.os, c.arch)}</div>
       </td>
       <td className="hide-sm">
-        <div>{c.version ?? "?"}</div>
+        <div>
+          <VersionLabel version={c.version} latest={c.status === "approved" ? latest : null} />
+        </div>
         {upgrading && <div className="muted small">→ {c.effective_target_version}</div>}
       </td>
       <td className="row-actions">
-        <button className="ghost" onClick={() => setMenu((m) => !m)} aria-label="Actions">
-          ⋯
-        </button>
-        {menu && (
-          <div className="menu" onMouseLeave={() => setMenu(false)}>
-            {c.status === "approved" && <button onClick={() => (setMenu(false), onEdit())}>Change record…</button>}
-            {latest && c.version !== latest && c.status === "approved" && (
+        <RowMenu label={`Actions for ${clientLabel(c)}`}>
+          {(close) => (
+            <>
+              {c.status === "approved" && (
+                <button role="menuitem" onClick={() => (close(), onEdit())}>
+                  Edit name and record…
+                </button>
+              )}
+              {c.status !== "approved" && (
+                <button role="menuitem" onClick={() => (close(), onRename())}>
+                  Rename…
+                </button>
+              )}
+              {latest && c.version !== latest && c.status === "approved" && (
+                <button
+                  role="menuitem"
+                  disabled={busy}
+                  onClick={() => (close(), run(async () => (await api.upgrade(c.id, latest), reload())))}
+                >
+                  Upgrade to {latest}
+                </button>
+              )}
+              {c.target_version && (
+                <button
+                  role="menuitem"
+                  disabled={busy}
+                  onClick={() => (close(), run(async () => (await api.upgrade(c.id, null), reload())))}
+                >
+                  Cancel upgrade override
+                </button>
+              )}
+              {c.status === "approved" && (
+                <button
+                  role="menuitem"
+                  className="danger"
+                  disabled={busy}
+                  onClick={() => {
+                    close();
+                    if (confirm(`Revoke ${clientLabel(c)} (${c.record_name})? It will stop updating DNS.`))
+                      run(async () => (await api.revoke(c.id), reload()));
+                  }}
+                >
+                  Revoke
+                </button>
+              )}
               <button
-                disabled={busy}
-                onClick={() => run(async () => (setMenu(false), await api.upgrade(c.id, latest), reload()))}
-              >
-                Upgrade to {latest}
-              </button>
-            )}
-            {c.target_version && (
-              <button disabled={busy} onClick={() => run(async () => (setMenu(false), await api.upgrade(c.id, null), reload()))}>
-                Cancel upgrade override
-              </button>
-            )}
-            {c.status === "approved" && (
-              <button
+                role="menuitem"
                 className="danger"
                 disabled={busy}
-                onClick={() =>
-                  confirm(`Revoke ${c.record_name}? It will stop updating DNS.`) &&
-                  run(async () => (setMenu(false), await api.revoke(c.id), reload()))
-                }
+                onClick={() => {
+                  close();
+                  if (!confirm(`Delete ${clientLabel(c)}?`)) return;
+                  const deleteRecord = !!c.record_name && confirm(`Also delete the DNS record ${c.record_name}?`);
+                  run(async () => (await api.remove(c.id, deleteRecord), reload()));
+                }}
               >
-                Revoke
+                Delete…
               </button>
-            )}
-            <button
-              className="danger"
-              disabled={busy}
-              onClick={() => {
-                if (!confirm(`Delete ${c.hostname ?? c.id}?`)) return;
-                const deleteRecord = !!c.record_name && confirm(`Also delete the DNS record ${c.record_name}?`);
-                run(async () => (setMenu(false), await api.remove(c.id, deleteRecord), reload()));
-              }}
-            >
-              Delete…
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </RowMenu>
       </td>
     </tr>
+  );
+}
+
+/** Installed client version, flagged when it is behind the latest release. */
+function VersionLabel({ version, latest }: { version: string | null; latest: string | null }) {
+  if (!version) return <span className="muted">unknown</span>;
+  return (
+    <span className="version">
+      {version}
+      {latest && version !== latest && (
+        <span className="badge warn tiny" title={`Latest release is ${latest}`}>
+          outdated
+        </span>
+      )}
+    </span>
   );
 }

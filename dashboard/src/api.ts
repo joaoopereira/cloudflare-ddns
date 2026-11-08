@@ -1,8 +1,12 @@
+/** Longest friendly name the server accepts. */
+export const NAME_MAX = 64;
+
 export type ClientStatus = "pending" | "approved" | "rejected" | "revoked";
 
 export interface Client {
   id: string;
   status: ClientStatus;
+  name: string | null;
   hostname: string | null;
   os: string | null;
   arch: string | null;
@@ -74,8 +78,9 @@ export const api = {
   me: () => request<{ email: string | null }>("GET", "/me"),
   clients: () => request<{ clients: Client[] }>("GET", "/clients").then((r) => r.clients),
   zones: () => request<{ zones: Zone[] }>("GET", "/zones").then((r) => r.zones),
-  approve: (id: string, zone_id: string, record_name: string) =>
-    request("POST", `/clients/${encodeURIComponent(id)}/approve`, { zone_id, record_name }),
+  approve: (id: string, zone_id: string, record_name: string, name: string | null) =>
+    request("POST", `/clients/${encodeURIComponent(id)}/approve`, { zone_id, record_name, name }),
+  rename: (id: string, name: string | null) => request("PATCH", `/clients/${encodeURIComponent(id)}`, { name }),
   reject: (id: string) => request("POST", `/clients/${encodeURIComponent(id)}/reject`),
   revoke: (id: string) => request("POST", `/clients/${encodeURIComponent(id)}/revoke`),
   remove: (id: string, deleteRecord: boolean) =>
@@ -92,3 +97,16 @@ export const api = {
       (r) => r.events,
     ),
 };
+
+export interface Health {
+  ok: boolean;
+  version: string;
+  commit: string | null;
+}
+
+/** Public health check; also reports the deployed Worker version. */
+export async function health(): Promise<Health> {
+  const res = await fetch("/health", { cache: "no-store" });
+  if (!res.ok) throw new ApiError(`HTTP ${res.status}`, res.status);
+  return (await res.json()) as Health;
+}

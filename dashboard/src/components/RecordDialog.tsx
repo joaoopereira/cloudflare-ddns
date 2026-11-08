@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, type Client, type Zone } from "../api";
+import { api, NAME_MAX, type Client, type Zone } from "../api";
 
 interface Props {
   client: Client;
@@ -8,10 +8,13 @@ interface Props {
   onClose: () => void;
   onDone: () => void;
   notify: (msg: string) => void;
+  /** Approving: prefill the friendly name with the hostname. */
+  approving?: boolean;
 }
 
-/** Pick a zone and record name for a client (used to approve and to edit). */
-export function RecordDialog({ client, title, submitLabel, onClose, onDone, notify }: Props) {
+/** Pick a friendly name, zone and record name for a client (used to approve and to edit). */
+export function RecordDialog({ client, title, submitLabel, onClose, onDone, notify, approving }: Props) {
+  const [label, setLabel] = useState(client.name ?? (approving ? (client.hostname ?? "") : ""));
   const [zones, setZones] = useState<Zone[] | null>(null);
   const [zoneId, setZoneId] = useState(client.zone_id ?? "");
   const initialName =
@@ -45,7 +48,7 @@ export function RecordDialog({ client, title, submitLabel, onClose, onDone, noti
     e.preventDefault();
     setBusy(true);
     try {
-      await api.approve(client.id, zoneId, name.trim() || "@");
+      await api.approve(client.id, zoneId, name.trim() || "@", label.trim() || null);
       onDone();
     } catch (err) {
       notify((err as Error).message);
@@ -62,6 +65,18 @@ export function RecordDialog({ client, title, submitLabel, onClose, onDone, noti
           {client.hostname ?? client.id} · {client.registered_ip}
         </p>
         <label>
+          <span>
+            Name <span className="muted small">(optional)</span>
+          </span>
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder={client.hostname ?? "Home NAS"}
+            maxLength={NAME_MAX}
+            autoFocus
+          />
+        </label>
+        <label>
           Zone
           <select value={zoneId} onChange={(e) => setZoneId(e.target.value)} disabled={!zones} required>
             {!zones && <option>Loading…</option>}
@@ -75,7 +90,7 @@ export function RecordDialog({ client, title, submitLabel, onClose, onDone, noti
         <label>
           Record name
           <div className="suffix-input">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="home" autoFocus />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="home" />
             <span className="muted">.{zone?.name ?? "…"}</span>
           </div>
         </label>

@@ -54,6 +54,7 @@ The client should use `interval` from each response as its next delay.
 
 | Path | Purpose |
 | --- | --- |
+| `GET /health` | `{"ok":true,"db":true,"version":"v1.1.0","commit":"abc1234"}`. `version` is the deployed release tag (`dev` when not set by the deploy workflow), `commit` the short commit SHA or `null`. |
 | `GET /install.sh`, `GET /install.ps1` | Installers, with this server's URL filled in |
 | `GET /download/<version>/<asset>` | Client binaries from the `ddns-releases` R2 bucket. `version` is `vX.Y.Z` or `latest`; the response's `X-Release-Version` header names the resolved version. Assets: `ddns-client_<os>_<arch>[.exe]` (os: linux, darwin, windows; arch: amd64, arm64, arm) and `checksums.txt`. |
 
@@ -66,9 +67,10 @@ verifies the `Cf-Access-Jwt-Assertion` header against `ACCESS_TEAM_DOMAIN` and
 | Method and path | Purpose |
 | --- | --- |
 | `GET /me` | Signed-in admin email |
-| `GET /clients` | All clients with `online`, `approval_deadline`, `effective_target_version` |
+| `GET /clients` | All clients with `name` (friendly name or `null`), `online`, `approval_deadline`, `effective_target_version` |
 | `GET /clients/:id` | One client |
-| `POST /clients/:id/approve` | `{"zone_id","record_name"}`. Approve a pending client, or change an approved client's record. `record_name` can be `home`, `home.example.com` or `@`. `409` if another client uses the record. |
+| `POST /clients/:id/approve` | `{"zone_id","record_name","name"?}`. Approve a pending client, or change an approved client's record. `record_name` can be `home`, `home.example.com` or `@`. `name` is optional (see `PATCH`); leave it out to keep the current one. `409` if another client uses the record. |
+| `PATCH /clients/:id` | `{"name":"Home NAS"}` sets the client's friendly name, `{"name":null}` (or a blank string) clears it. Names are trimmed, at most 64 characters, no control characters. Returns `{"client"}`. Clients can't set their own name. |
 | `POST /clients/:id/reject` | Reject a pending client and block its IP |
 | `POST /clients/:id/revoke` | Stop a client from updating DNS |
 | `DELETE /clients/:id[?delete_record=true]` | Remove a client, optionally its DNS record |
