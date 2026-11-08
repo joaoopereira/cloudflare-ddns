@@ -89,7 +89,11 @@ R2 and creates a GitHub Release.
 
 ## 6. Check it
 
-- `https://ddns.apps.joaoopereira.com/health` returns `{"ok":true,"db":true}`.
+- `https://ddns.apps.joaoopereira.com/health` returns `{"ok":true,"db":true,"version":"v1.0.0","commit":"abc1234"}`.
+  The deploy workflow sets `version` (latest git tag) and `commit` (short SHA)
+  as the Worker vars `APP_VERSION` and `APP_COMMIT`, and builds the dashboard
+  with the same values. A release cut later on the same commit shows up after
+  the next deploy.
 - Opening `https://ddns.apps.joaoopereira.com` asks you to sign in, then shows the dashboard.
 - Click **Listen for new clients**, run the one-liner on a machine, approve it.
 

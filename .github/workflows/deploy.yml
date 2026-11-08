@@ -31,6 +31,9 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history and tags, so the app version can be read from git.
+          fetch-depth: 0
       - name: Check deploy prerequisites
         id: check
         run: |
@@ -53,6 +56,13 @@ jobs:
             dashboard/package-lock.json
       - if: steps.check.outputs.ready == 'true'
         run: npm ci
+      - name: Resolve app version
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          # Latest release tag plus the short commit, shown in the dashboard
+          # footer and returned by /health.
+          echo "APP_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo dev)" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
       - name: Apply D1 migrations
         if: steps.check.outputs.ready == 'true'
         run: npx wrangler d1 migrations apply ddns --remote
@@ -61,7 +71,7 @@ jobs:
         run: npm run build:dashboard
       - name: Deploy Worker
         if: steps.check.outputs.ready == 'true'
-        run: npx wrangler deploy
+        run: npx wrangler deploy --var "APP_VERSION:$APP_VERSION" --var "APP_COMMIT:$APP_COMMIT"
       - name: Sync Worker secrets
         if: steps.check.outputs.ready == 'true'
         env:
