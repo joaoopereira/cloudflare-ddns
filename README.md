@@ -49,7 +49,7 @@ them, and managing records.
 | Path | What |
 | --- | --- |
 | `server/` | Cloudflare Worker (Hono + TypeScript): client API, admin API, downloads, dashboard hosting |
-| `dashboard/` | Web dashboard (React + Vite), served by the Worker as static assets |
+| `dashboard/` | Web dashboard (React + Vite, installable as an app), served by the Worker as static assets |
 | `server/migrations/` | D1 schema migrations |
 | `client/` | Go client agent (`cmd/ddns-client`) |
 | `install/` | `install.sh` / `install.ps1` one-liner installers |

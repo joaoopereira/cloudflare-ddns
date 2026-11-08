@@ -89,6 +89,7 @@ button.ghost { background: transparent; border-color: transparent; }
 button.danger { color: var(--danger); }
 button.small-btn { padding: 2px 8px; margin-left: 8px; font-size: 12px; border-color: var(--border); }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.actions.center { justify-content: center; }
 
 .listen-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
 .listen.on { border-color: var(--accent); }

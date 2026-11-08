@@ -62,13 +62,24 @@ export class ApiError extends Error {
   }
 }
 
+/** Fired on `window` when the Cloudflare Access session is gone (see App). */
+export const SESSION_EXPIRED = "ddns:session-expired";
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`/api/admin${path}`, {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "same-origin",
+    // When the Access session has expired, Access answers with a redirect to
+    // its login page. Following it from fetch() only ends in a CORS error, so
+    // catch it here and let the app send the whole page through the login.
+    redirect: "manual",
   });
+  if (res.type === "opaqueredirect" || res.status === 401) {
+    dispatchEvent(new Event(SESSION_EXPIRED));
+    throw new ApiError("Your sign-in has expired", 401);
+  }
   const data = (await res.json().catch(() => ({}))) as { error?: string } & T;
   if (!res.ok) throw new ApiError(data.error ?? `HTTP ${res.status}`, res.status);
   return data;

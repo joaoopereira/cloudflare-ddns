@@ -47,6 +47,13 @@ In **Zero Trust → Access → Applications → Add an application → Self-host
    team domain (**Zero Trust → Settings → Custom pages**, e.g.
    `myteam.cloudflareaccess.com`).
 
+The dashboard can be installed as an app (see the user guide). Its manifest
+and icons (`/manifest.webmanifest`, `/icons/*`) and service worker (`/sw.js`)
+stay behind Access; the page fetches the manifest with credentials, so no
+bypass is needed. If a browser still doesn't offer to install it, add
+`/manifest.webmanifest` and `/icons/*` to the bypass application (they hold
+nothing private).
+
 The Worker verifies the Access login itself on `/api/admin/*`, so the admin
 API stays protected even if the Access configuration changes. Until the AUD
 and team domain are set, `/api/admin/*` answers `503`.

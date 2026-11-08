@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, health, type Health } from "./api";
+import { api, health, SESSION_EXPIRED, type Health } from "./api";
 import { ver } from "./format";
 import { BlockedPage } from "./pages/Blocked";
 import { ClientsPage } from "./pages/Clients";
@@ -34,6 +34,8 @@ export function App() {
     addEventListener("hashchange", onHash);
     return () => removeEventListener("hashchange", onHash);
   }, []);
+
+  const expired = useSessionExpired();
 
   useEffect(() => {
     api
@@ -70,7 +72,17 @@ export function App() {
         <div className="who">{email}</div>
       </header>
       <main>
-        {authError ? (
+        {expired ? (
+          <div className="card empty">
+            <h2>Signed out</h2>
+            <p className="muted">Your Cloudflare Access session has expired.</p>
+            <div className="actions center">
+              <button className="primary" onClick={() => location.reload()}>
+                Sign in again
+              </button>
+            </div>
+          </div>
+        ) : authError ? (
           <div className="card empty">
             <h2>Can't reach the admin API</h2>
             <p className="muted">{authError}</p>
@@ -91,6 +103,36 @@ export function App() {
       )}
     </div>
   );
+}
+
+/** Don't reload for a new sign-in more than once in this window, to avoid a loop. */
+const RELOGIN_GUARD_MS = 2 * 60_000;
+const RELOGIN_KEY = "ddns:relogin-at";
+
+/**
+ * When the Access session expires (for example, the installed app was in the
+ * background for a day), reload the page: the navigation goes through Access,
+ * which shows its login and comes back. If that already happened moments ago,
+ * show a "Sign in again" button instead of reloading in a loop.
+ */
+function useSessionExpired(): boolean {
+  const [expired, setExpired] = useState(false);
+  useEffect(() => {
+    const onExpired = () => {
+      setExpired(true);
+      let last = 0;
+      try {
+        last = Number(sessionStorage.getItem(RELOGIN_KEY)) || 0;
+        if (Date.now() - last > RELOGIN_GUARD_MS) sessionStorage.setItem(RELOGIN_KEY, String(Date.now()));
+      } catch {
+        last = Date.now(); // no storage: never auto-reload
+      }
+      if (Date.now() - last > RELOGIN_GUARD_MS) location.reload();
+    };
+    addEventListener(SESSION_EXPIRED, onExpired);
+    return () => removeEventListener(SESSION_EXPIRED, onExpired);
+  }, []);
+  return expired;
 }
 
 /** Every 5 minutes, check which version the Worker is running. */

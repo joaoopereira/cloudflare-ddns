@@ -20,6 +20,21 @@ Open **https://ddns.apps.joaoopereira.com**. Cloudflare Access asks you to sign
 in (with the method configured for the app, such as a one-time code by email).
 Only people allowed by the Access policy can open the dashboard.
 
+## Installing the dashboard as an app
+
+The dashboard can be added to your phone's home screen and opens full screen,
+like a native app:
+
+- **Android (Chrome):** open the dashboard, sign in, then tap **⋮ → Install
+  app** (or **Add to Home screen**).
+- **iPhone / iPad (Safari):** open the dashboard, sign in, then tap **Share →
+  Add to Home Screen**.
+
+Desktop Chrome and Edge offer the same through the install icon in the address
+bar. The app only keeps the page itself for a fast start; client status, IPs
+and timestamps are always loaded live. When your Access sign-in has expired,
+the app sends you back through the Access login (or shows **Sign in again**).
+
 ## Adding a machine
 
 1. In the dashboard, click **Listen for new clients**. While it's off, new
