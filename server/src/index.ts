@@ -12,7 +12,12 @@ app.get("/health", async (c) => {
   const row = await c.env.DB.prepare(
     "SELECT value FROM settings WHERE key = 'registration_open'",
   ).first<{ value: string }>();
-  return c.json({ ok: true, db: row !== null });
+  return c.json({
+    ok: true,
+    db: row !== null,
+    version: c.env.APP_VERSION || "dev",
+    commit: c.env.APP_COMMIT || null,
+  });
 });
 
 app.route("/", publicRoutes);

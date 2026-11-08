@@ -1,6 +1,9 @@
 export interface Env {
   DB: D1Database;
   PUBLIC_URL: string;
+  /** Deployed app version (latest git tag) and short commit, set by the deploy workflow. */
+  APP_VERSION?: string;
+  APP_COMMIT?: string;
   /** Cloudflare API token (Zone:Read + DNS:Edit). Set as a Worker secret. */
   CF_API_TOKEN?: string;
   /** Cloudflare Access team domain, e.g. "myteam.cloudflareaccess.com". */

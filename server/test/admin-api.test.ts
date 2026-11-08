@@ -110,3 +110,74 @@ describe("settings", () => {
     expect(events.map((e) => e.type)).toContain("settings_changed");
   });
 });
+
+describe("friendly names", () => {
+  async function pending(n = 1) {
+    await call(env, "PUT", "/api/admin/settings", { registration_open: true });
+    const creds = clientCreds(n);
+    await call(env, "POST", "/api/client/register", creds, `203.0.113.${n}`);
+    return creds;
+  }
+  const getName = async (id: string) =>
+    ((await (await call(env, "GET", `/api/admin/clients/${id}`)).json()) as { client: { name: string | null } }).client.name;
+
+  it("starts without a name", async () => {
+    const a = await pending();
+    expect(await getName(a.id)).toBeNull();
+  });
+
+  it("sets a trimmed name at approval and keeps it when the record changes", async () => {
+    mockCloudflare();
+    const a = await pending();
+    const res = await call(env, "POST", `/api/admin/clients/${a.id}/approve`, {
+      zone_id: "zone-1",
+      record_name: "home",
+      name: "  Home   NAS ",
+    });
+    expect(await res.json()).toMatchObject({ client: { name: "Home NAS" } });
+    await call(env, "POST", `/api/admin/clients/${a.id}/approve`, { zone_id: "zone-1", record_name: "nas" });
+    expect(await getName(a.id)).toBe("Home NAS");
+  });
+
+  it("renames and clears with PATCH, and logs a renamed event", async () => {
+    const a = await pending();
+    const set = await call(env, "PATCH", `/api/admin/clients/${a.id}`, { name: "Office router" });
+    expect(set.status).toBe(200);
+    expect(await getName(a.id)).toBe("Office router");
+    await call(env, "PATCH", `/api/admin/clients/${a.id}`, { name: "   " });
+    expect(await getName(a.id)).toBeNull();
+    await call(env, "PATCH", `/api/admin/clients/${a.id}`, { name: "Again" });
+    await call(env, "PATCH", `/api/admin/clients/${a.id}`, { name: null });
+    expect(await getName(a.id)).toBeNull();
+    const { events } = (await (await call(env, "GET", `/api/admin/events?client_id=${a.id}`)).json()) as {
+      events: { type: string; detail: Record<string, unknown> }[];
+    };
+    const renames = events.filter((e) => e.type === "renamed");
+    expect(renames).toHaveLength(4);
+    expect(renames.at(-1)?.detail).toMatchObject({ from: null, to: "Office router" });
+  });
+
+  it("validates names", async () => {
+    mockCloudflare();
+    const a = await pending();
+    for (const name of ["x".repeat(65), 42, "bad\u0007name"]) {
+      expect((await call(env, "PATCH", `/api/admin/clients/${a.id}`, { name })).status).toBe(400);
+    }
+    expect((await call(env, "PATCH", `/api/admin/clients/${a.id}`, {})).status).toBe(400);
+    expect((await call(env, "PATCH", `/api/admin/clients/${a.id}`, { name: "x".repeat(64) })).status).toBe(200);
+    const approve = await call(env, "POST", `/api/admin/clients/${a.id}/approve`, {
+      zone_id: "zone-1",
+      record_name: "home",
+      name: "y".repeat(65),
+    });
+    expect(approve.status).toBe(400);
+    expect((await call(env, "PATCH", "/api/admin/clients/nope", { name: "x" })).status).toBe(404);
+  });
+
+  it("never lets a client set its own name", async () => {
+    await call(env, "PUT", "/api/admin/settings", { registration_open: true });
+    const creds = { ...clientCreds(1), name: "Sneaky" };
+    await call(env, "POST", "/api/client/register", creds, "203.0.113.1");
+    expect(await getName(creds.id)).toBeNull();
+  });
+});

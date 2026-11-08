@@ -15,6 +15,21 @@ adminApi.use("*", requireAccess);
 
 const VERSION_RE = /^v?\d+\.\d+\.\d+([-.+][0-9A-Za-z.-]+)?$/;
 const LABEL_RE = /^(\*|[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)$/;
+export const NAME_MAX = 64;
+
+/**
+ * Validate a friendly name from a request body. Returns the trimmed name,
+ * null to clear it (null or blank), or an error message.
+ */
+export function parseName(value: unknown): { name: string | null } | { error: string } {
+  if (value === null) return { name: null };
+  if (typeof value !== "string") return { error: "name must be a string or null" };
+  const name = value.trim().replace(/\s+/g, " ");
+  if (!name) return { name: null };
+  if (name.length > NAME_MAX) return { error: `name must be at most ${NAME_MAX} characters` };
+  if (/[\u0000-\u001f\u007f]/.test(name)) return { error: "name must not contain control characters" };
+  return { name };
+}
 
 function cf(env: AppEnv["Bindings"]): CloudflareApi | null {
   return env.CF_API_TOKEN ? new CloudflareApi(env.CF_API_TOKEN) : null;
@@ -70,8 +85,14 @@ adminApi.post("/clients/:id/approve", async (c) => {
   if (client.status !== "pending" && client.status !== "approved") {
     return c.json({ error: `cannot approve a ${client.status} client` }, 409);
   }
-  const body = await c.req.json<{ zone_id?: string; record_name?: string }>().catch(() => ({}) as Record<string, never>);
+  const body = await c.req
+    .json<{ zone_id?: string; record_name?: string; name?: unknown }>()
+    .catch(() => ({}) as Record<string, never>);
   if (!body.zone_id || !body.record_name) return c.json({ error: "zone_id and record_name are required" }, 400);
+  // `name` is optional: leave it out to keep the current name.
+  const parsed = body.name === undefined ? null : parseName(body.name);
+  if (parsed && "error" in parsed) return c.json({ error: parsed.error }, 400);
+  const name = parsed ? parsed.name : client.name;
 
   const api = cf(c.env);
   if (!api) return c.json({ error: "CF_API_TOKEN is not configured" }, 503);
@@ -90,15 +111,33 @@ adminApi.post("/clients/:id/approve", async (c) => {
   await db.batch([
     db
       .prepare(
-        `UPDATE clients SET status = 'approved', zone_id = ?, zone_name = ?, record_name = ?,
+        `UPDATE clients SET status = 'approved', name = ?, zone_id = ?, zone_name = ?, record_name = ?,
            record_id = CASE WHEN ? THEN NULL ELSE record_id END,
            current_ip = CASE WHEN ? THEN NULL ELSE current_ip END,
            approved_at = COALESCE(approved_at, ?), last_error = NULL
          WHERE id = ?`,
       )
-      .bind(zone.id, zone.name, fqdn, changed ? 1 : 0, changed ? 1 : 0, now(), client.id),
-    eventStmt(db, "approved", client.id, { record: fqdn, by: c.get("adminEmail") }),
+      .bind(name, zone.id, zone.name, fqdn, changed ? 1 : 0, changed ? 1 : 0, now(), client.id),
+    eventStmt(db, "approved", client.id, { record: fqdn, ...(name ? { name } : {}), by: c.get("adminEmail") }),
   ]);
+  return c.json({ client: present((await getClient(db, client.id))!, await getSettings(db)) });
+});
+
+/** Edit a client's dashboard-only fields. Today that is the friendly name. */
+adminApi.patch("/clients/:id", async (c) => {
+  const db = c.env.DB;
+  const client = await getClient(db, c.req.param("id"));
+  if (!client) return c.json({ error: "not found" }, 404);
+  const body = await c.req.json<{ name?: unknown }>().catch(() => ({}) as Record<string, never>);
+  if (body.name === undefined) return c.json({ error: "name is required (use null to clear it)" }, 400);
+  const parsed = parseName(body.name);
+  if ("error" in parsed) return c.json({ error: parsed.error }, 400);
+  if (parsed.name !== client.name) {
+    await db.batch([
+      db.prepare("UPDATE clients SET name = ? WHERE id = ?").bind(parsed.name, client.id),
+      eventStmt(db, "renamed", client.id, { from: client.name, to: parsed.name, by: c.get("adminEmail") }),
+    ]);
+  }
   return c.json({ client: present((await getClient(db, client.id))!, await getSettings(db)) });
 });
 
@@ -132,7 +171,7 @@ adminApi.delete("/clients/:id", async (c) => {
   }
   await db.batch([
     db.prepare("DELETE FROM clients WHERE id = ?").bind(client.id),
-    eventStmt(db, "deleted", client.id, { record: client.record_name, by: c.get("adminEmail") }),
+    eventStmt(db, "deleted", client.id, { record: client.record_name, name: client.name, by: c.get("adminEmail") }),
   ]);
   return c.json({ ok: true });
 });

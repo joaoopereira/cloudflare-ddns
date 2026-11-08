@@ -3,6 +3,7 @@ import { now } from "./util";
 export type EventType =
   | "registered"
   | "approved"
+  | "renamed"
   | "rejected"
   | "revoked"
   | "deleted"

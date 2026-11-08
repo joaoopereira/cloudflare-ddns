@@ -8,6 +8,8 @@ export interface ClientRow {
   id: string;
   secret_hash: string;
   status: ClientStatus;
+  /** Friendly name set in the dashboard (null when unset). */
+  name: string | null;
   hostname: string | null;
   os: string | null;
   arch: string | null;
