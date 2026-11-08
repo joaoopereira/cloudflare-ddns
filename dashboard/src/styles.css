@@ -183,11 +183,80 @@ input, select {
 }
 .toast.error { background: var(--danger); }
 
+/* Safe areas: the notch and home indicator when installed as an app (viewport-fit=cover). */
+.topbar {
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
+}
+main, .footer {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+.footer { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.toast { bottom: max(16px, env(safe-area-inset-bottom)); }
+.dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
+
+/* Touch and phones: tap targets of at least 44px. */
+@media (pointer: coarse), (max-width: 640px) {
+  button, nav a { min-height: 44px; }
+  button.ghost[aria-haspopup] { min-width: 44px; font-size: 18px; }
+  .menu button { min-height: 44px; padding: 10px 14px; }
+  button.small-btn { min-height: 44px; padding: 4px 12px; }
+  .footer button { min-height: 32px; }
+}
+
 @media (max-width: 640px) {
-  .topbar { padding: 0 16px; gap: 12px; }
+  /* Inputs at 16px so iOS doesn't zoom in on focus. */
+  input, select { font-size: 16px; padding: 10px 12px; }
+  .actions button { flex: 1; }
+  .listen-head > button { width: 100%; }
+
+  .topbar {
+    gap: 12px; height: auto; min-height: 52px;
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
   .who { display: none; }
+
+  /* Navigation becomes a bottom tab bar, in thumb reach. */
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--surface); border-top: 1px solid var(--border);
+    gap: 0; overflow: visible;
+    padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  }
+  nav a {
+    flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: 6px 4px; font-size: 13px; white-space: normal; line-height: 1.2;
+  }
+  nav a:hover { background: transparent; }
+  nav a.active { color: var(--accent); background: transparent; }
+  main { padding-top: 16px; gap: 20px; }
+  .footer { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(72px + env(safe-area-inset-bottom)); }
+
   .timeline li { grid-template-columns: 1fr; gap: 0; }
   .hide-sm { display: none; }
   .show-sm { display: block; }
   th, td { padding: 10px; }
+
+  /* Tables become a stacked list of cards. */
+  .table-wrap:has(.cards-sm) { background: none; border: none; box-shadow: none; overflow: visible; }
+  .cards-sm, .cards-sm tbody { display: flex; flex-direction: column; gap: 12px; }
+  .cards-sm thead { display: none; }
+  .cards-sm tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: start;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 8px 12px 14px; box-shadow: var(--shadow);
+  }
+  .cards-sm td { grid-column: 1; padding: 0; border: none; min-width: 0; }
+  .cards-sm td.hide-sm { display: none; }
+  .cards-sm td.row-actions { grid-column: 2; grid-row: 1 / span 3; width: auto; align-self: center; }
+  .cards-sm td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); }
+  .cards-sm .status-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .cards-sm .status-cell .badge.upgrading { margin-top: 0; }
+  .client-cell { min-width: 0; }
+
+  .dialog { padding: 16px; }
 }

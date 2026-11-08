@@ -145,7 +145,7 @@ export function ClientsPage({ notify }: PageProps) {
           <div className="card empty muted">No clients yet. Turn on listening and run the installer on a machine.</div>
         ) : (
           <div className="card table-wrap">
-            <table>
+            <table className="cards-sm">
               <thead>
                 <tr>
                   <th>Client</th>
@@ -245,7 +245,15 @@ function ClientRow({
       <td className="client-cell">
         <div className="strong">{clientLabel(c)}</div>
         <div className="mono small">{c.record_name}</div>
-        <div className="show-sm mono small">{c.current_ip ?? <span className="muted">pending first update</span>}</div>
+        <div className="show-sm small">
+          <span className="mono">{c.current_ip ?? <span className="muted">pending first update</span>}</span>
+          {c.last_ip_change && (
+            <span className="muted" title={fullDate(c.last_ip_change)}>
+              {" "}
+              · updated {ago(c.last_ip_change)}
+            </span>
+          )}
+        </div>
         <div className="show-sm muted small">
           {c.name && c.hostname ? `${c.hostname} · ` : ""}
           <VersionLabel version={c.version} latest={c.status === "approved" ? latest : null} />
@@ -257,7 +265,7 @@ function ClientRow({
         )}
       </td>
       <td className="mono hide-sm">{c.current_ip ?? <span className="muted">pending first update</span>}</td>
-      <td>
+      <td className="status-cell">
         {status}
         <div className="muted small" title={fullDate(c.last_seen)}>
           seen {ago(c.last_seen)}

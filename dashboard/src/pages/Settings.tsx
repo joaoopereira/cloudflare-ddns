@@ -39,6 +39,8 @@ export function SettingsPage({ notify }: PageProps) {
           <div className="suffix-input narrow">
             <input
               type="number"
+              inputMode="decimal"
+              enterKeyHint="done"
               min={0.5}
               max={1440}
               step={0.5}

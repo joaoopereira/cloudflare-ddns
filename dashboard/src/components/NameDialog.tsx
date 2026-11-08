@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api, NAME_MAX, type Client } from "../api";
+import { touchScreen } from "../format";
 
 /** Set or clear a client's friendly name. */
 export function NameDialog({
@@ -44,7 +45,9 @@ export function NameDialog({
             onChange={(e) => setName(e.target.value)}
             placeholder={client.hostname ?? "Home NAS"}
             maxLength={NAME_MAX}
-            autoFocus
+            autoCapitalize="words"
+            enterKeyHint="done"
+            autoFocus={!touchScreen()}
           />
         </label>
         <p className="muted small">Leave empty to show the hostname instead.</p>

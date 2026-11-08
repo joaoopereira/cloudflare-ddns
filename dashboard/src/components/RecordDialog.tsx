@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, NAME_MAX, type Client, type Zone } from "../api";
+import { touchScreen } from "../format";
 
 interface Props {
   client: Client;
@@ -73,7 +74,9 @@ export function RecordDialog({ client, title, submitLabel, onClose, onDone, noti
             onChange={(e) => setLabel(e.target.value)}
             placeholder={client.hostname ?? "Home NAS"}
             maxLength={NAME_MAX}
-            autoFocus
+            autoCapitalize="words"
+            enterKeyHint="next"
+            autoFocus={!touchScreen()}
           />
         </label>
         <label>
@@ -90,7 +93,16 @@ export function RecordDialog({ client, title, submitLabel, onClose, onDone, noti
         <label>
           Record name
           <div className="suffix-input">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="home" />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="home"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="done"
+            />
             <span className="muted">.{zone?.name ?? "…"}</span>
           </div>
         </label>

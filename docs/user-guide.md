@@ -73,9 +73,12 @@ offline, when the client was last seen, when the IP last changed, the machine
 (hostname and OS) and the installed client version. A client without a name
 is shown by its hostname. Versions behind the latest release are marked
 **outdated**. A ⚠ line under the record shows the last error, such as a
-failed DNS update or upgrade. The page refreshes every few seconds. On a
-phone, the IP, hostname and version move under the client's name and the
-other columns are hidden.
+failed DNS update or upgrade. The page refreshes every few seconds.
+
+On a phone, the navigation moves to a tab bar at the bottom of the screen and
+each client becomes a card: name and record, current IP and when it last
+changed, hostname and version, then its status. Tap **⋯** on a card for its
+actions. Blocked IPs are shown as cards the same way.
 
 Above the table, **Installed** sums up which client versions are running
 (for example "3 on 1.0.0, 1 on 0.9.0").

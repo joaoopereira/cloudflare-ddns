@@ -46,3 +46,8 @@ export function versionSummary(versions: (string | null)[]): string {
     .map(([v, n]) => `${n} on ${v}`)
     .join(", ");
 }
+
+/** True on phones and tablets: autofocusing an input there pops up the keyboard over a dialog. */
+export function touchScreen(): boolean {
+  return matchMedia("(pointer: coarse)").matches;
+}

@@ -22,7 +22,7 @@ export function BlockedPage({ notify }: PageProps) {
         <div className="card empty muted">No blocked IPs.</div>
       ) : (
         <div className="card table-wrap">
-          <table>
+          <table className="cards-sm">
             <thead>
               <tr>
                 <th>IP</th>
@@ -35,8 +35,8 @@ export function BlockedPage({ notify }: PageProps) {
               {data.map((b) => (
                 <tr key={b.ip}>
                   <td className="mono strong">{b.ip}</td>
-                  <td>{b.reason}</td>
-                  <td title={fullDate(b.blocked_at)}>{ago(b.blocked_at)}</td>
+                  <td data-label="Reason">{b.reason}</td>
+                  <td data-label="Blocked" title={fullDate(b.blocked_at)}>{ago(b.blocked_at)}</td>
                   <td className="row-actions">
                     <button
                       disabled={busy}
