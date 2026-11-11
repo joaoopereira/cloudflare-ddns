@@ -46,6 +46,13 @@ In **Zero Trust → Access → Applications → Add an application → Self-host
 4. Copy the first application's **Application Audience (AUD) Tag** and your
    team domain (**Zero Trust → Settings → Custom pages**, e.g.
    `myteam.cloudflareaccess.com`).
+5. Set how long a login lasts. The dashboard has no session of its own: you
+   stay signed in for as long as the Access cookie is valid (24 hours by
+   default). Raise the first application's **Session Duration** (for
+   example to 1 month), and set the team-wide **Global session timeout**
+   (**Zero Trust → Settings → Authentication**) to match: when the app
+   session ends, Access only signs you back in silently while the global
+   session is still valid.
 
 The dashboard can be installed as an app (see the user guide). Its manifest
 and icons (`/manifest.webmanifest`, `/icons/*`) and service worker (`/sw.js`)
