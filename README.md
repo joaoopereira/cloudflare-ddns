@@ -5,7 +5,8 @@ machine, and a Cloudflare Worker keeps that machine's DNS record pointed at its
 current public IP. A web dashboard shows every client and record and lets you
 manage them remotely.
 
-The app runs at **https://ddns.apps.joaoopereira.com**.
+You deploy it to your own Cloudflare account ([docs/deployment.md](docs/deployment.md));
+`ddns.example.com` in the docs stands for your hostname.
 
 > **Status:** the MVP is complete: Worker ([API reference](docs/api.md)), Go
 > client, installers and dashboard. Follow [docs/deployment.md](docs/deployment.md)

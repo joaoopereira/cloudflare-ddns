@@ -1,12 +1,14 @@
 name: Deploy
 
 # Deploys a released version (a vX.Y.Z tag) of the Worker and dashboard to
-# https://ddns.apps.joaoopereira.com, after applying any pending D1 migrations.
+# https://ddns.example.com, after applying any pending D1 migrations.
 # Production only ever runs released code: pushes to development don't deploy.
 # The Release workflow calls this after publishing a release; to redeploy an
 # existing release, run it manually (Actions → Deploy → Run workflow) with the
 # tag.
-# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+# and repository variables DDNS_HOSTNAME and D1_DATABASE_ID, which replace the
+# placeholders in server/wrangler.toml.
 # Optional secrets DNS_API_TOKEN, ACCESS_TEAM_DOMAIN and ACCESS_AUD are copied
 # into the Worker's secrets (CF_API_TOKEN, ACCESS_TEAM_DOMAIN, ACCESS_AUD) on
 # every deploy, so they only ever need to be set in GitHub
@@ -41,6 +43,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DDNS_HOSTNAME: ${{ vars.DDNS_HOSTNAME }}
+      D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
     steps:
       - name: Check the version is a release tag
         working-directory: .
@@ -61,10 +65,12 @@ jobs:
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "::warning::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID secrets are not set; skipping deploy. See docs/deployment.md."
             echo "ready=false" >> "$GITHUB_OUTPUT"
-          elif grep -q REPLACE_WITH_D1_DATABASE_ID wrangler.toml; then
-            echo "::warning::wrangler.toml still has the placeholder D1 database_id; skipping deploy. See docs/deployment.md."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif ! printf '%s' "$DDNS_HOSTNAME" | grep -Eq '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$' \
+            || ! printf '%s' "$D1_DATABASE_ID" | grep -Eq '^[0-9a-f-]{36}$'; then
+            echo "::error::Set the repository variables DDNS_HOSTNAME (e.g. ddns.example.com) and D1_DATABASE_ID (the D1 database UUID). See docs/deployment.md."
+            exit 1
           else
+            sed -i "s/ddns\.example\.com/$DDNS_HOSTNAME/g; s/REPLACE_WITH_D1_DATABASE_ID/$D1_DATABASE_ID/" wrangler.toml
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/setup-node@v4

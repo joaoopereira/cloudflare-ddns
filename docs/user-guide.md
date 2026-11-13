@@ -16,7 +16,7 @@ their DNS records, and keeping them up to date.
 
 ## Signing in
 
-Open **https://ddns.apps.joaoopereira.com**. Cloudflare Access asks you to sign
+Open **https://ddns.example.com**. Cloudflare Access asks you to sign
 in (with the method configured for the app, such as a one-time code by email).
 Only people allowed by the Access policy can open the dashboard.
 
@@ -45,13 +45,13 @@ the app sends you back through the Access login (or shows **Sign in again**).
    **Linux / macOS** (as root or with sudo):
 
    ```bash
-   curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo sh
+   curl -fsSL https://ddns.example.com/install.sh | sudo sh
    ```
 
    **Windows** (PowerShell, *Run as Administrator*):
 
    ```powershell
-   irm https://ddns.apps.joaoopereira.com/install.ps1 | iex
+   irm https://ddns.example.com/install.ps1 | iex
    ```
 
    The client is installed as a service (systemd on Linux, launchd on macOS,
@@ -114,11 +114,11 @@ To remove the software from a machine, run the installer with `uninstall`
 client):
 
 ```bash
-curl -fsSL https://ddns.apps.joaoopereira.com/install.sh | sudo sh -s -- uninstall
+curl -fsSL https://ddns.example.com/install.sh | sudo sh -s -- uninstall
 ```
 
 ```powershell
-& ([scriptblock]::Create((irm https://ddns.apps.joaoopereira.com/install.ps1))) uninstall
+& ([scriptblock]::Create((irm https://ddns.example.com/install.ps1))) uninstall
 ```
 
 ## Blocked IPs

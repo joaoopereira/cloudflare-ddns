@@ -1,6 +1,6 @@
 # HTTP API
 
-All endpoints take and return JSON. Base URL: `https://ddns.apps.joaoopereira.com`.
+All endpoints take and return JSON. Base URL: `https://ddns.example.com`.
 
 ## Client API (`/api/client/*`)
 

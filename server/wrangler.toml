@@ -2,17 +2,19 @@ name = "cloudflare-ddns"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
-# The app is served on a Worker custom domain.
-# The zone (joaoopereira.com) must be in the same Cloudflare account.
+# The app is served on a Worker custom domain, whose zone must be in the same
+# Cloudflare account. ddns.example.com (here and in PUBLIC_URL) and the D1
+# database_id are placeholders: the deploy workflow fills them from the
+# repository variables DDNS_HOSTNAME and D1_DATABASE_ID (docs/deployment.md).
 routes = [
-  { pattern = "ddns.apps.joaoopereira.com", custom_domain = true }
+  { pattern = "ddns.example.com", custom_domain = true }
 ]
 
-# The D1 database (created 2026-11-08 in WEUR).
+# The D1 database (`npx wrangler d1 create ddns`).
 [[d1_databases]]
 binding = "DB"
 database_name = "ddns"
-database_id = "5688d267-ba95-4625-beec-287ca46fd8ab"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
 # Client release binaries (uploaded by .github/workflows/release.yml).
@@ -46,7 +48,7 @@ namespace_id = "1001"
 simple = { limit = 5, period = 60 }
 
 [vars]
-PUBLIC_URL = "https://ddns.apps.joaoopereira.com"
+PUBLIC_URL = "https://ddns.example.com"
 
 # Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
 #   CF_API_TOKEN        Cloudflare API token with Zone:Read + DNS:Edit on the managed zones
