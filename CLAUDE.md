@@ -16,10 +16,12 @@ docs/user-guide.md for user-visible behavior.
   IP goes to `blocked_ips` until the user unblocks it. Pending/rejected
   clients must never touch DNS.
 - "Remote update" = upgrading the client binary (target version in settings).
-- Hosted at https://ddns.apps.joaoopereira.com (Worker custom domain).
+- Self-hostable: nothing in the repo names a deployment. The hostname and D1
+  id are the repository variables `DDNS_HOSTNAME` and `D1_DATABASE_ID`
+  (placeholders in `server/wrangler.toml`); docs use `ddns.example.com`.
 - Dashboard auth: Cloudflare Access; admin API also validates the Access JWT.
   Public paths: `/api/client/*`, `/download/*`, `/install.sh`, `/install.ps1`, `/health`.
-- The repo is private, so clients never download from GitHub. Releases are
+- Clients never download from GitHub. Releases are
   uploaded to the `ddns-releases` R2 bucket and served by the Worker at
   `/download/<version>/<asset>` (`latest.txt` points at the newest).
 

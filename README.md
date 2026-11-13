@@ -8,10 +8,44 @@ manage them remotely.
 You deploy it to your own Cloudflare account ([docs/deployment.md](docs/deployment.md));
 `ddns.example.com` in the docs stands for your hostname.
 
-> **Status:** the MVP is complete: Worker ([API reference](docs/api.md)), Go
-> client, installers and dashboard. Follow [docs/deployment.md](docs/deployment.md)
-> to go live. See the
-> [backlog](https://github.com/joaoopereira/cloudflare-ddns/issues).
+## Why I built this
+
+I manage a handful of domains on Cloudflare, and some of their records have to
+follow machines whose public IP changes (home servers, family computers, small
+offices). I tried the usual answers first and none of them fit:
+
+- **DDNS providers** (No-IP, DuckDNS, DynDNS and friends) give you a name on
+  *their* domain, or charge to use yours. My domains are already on
+  Cloudflare, so I wanted the records to live there, with no extra provider
+  in the middle.
+- **Router DDNS** depends on what each router supports, and many don't
+  support Cloudflare at all.
+- **Scripts and open source updaters** (ddclient, a cron job with `curl`,
+  the many `cloudflare-ddns` containers) work well for one machine. With
+  several, the pattern they share starts to hurt:
+  - every machine holds a Cloudflare API token that can edit DNS, so one
+    compromised or lost machine puts the zone at risk;
+  - every machine has its own config file with the zone, record and token,
+    edited by hand over SSH or remote desktop;
+  - there is no single place to see which machines are alive, what IP each
+    record has and when it last changed;
+  - upgrading means visiting every machine again.
+
+What I wanted was closer to a small fleet manager than to a script:
+
+- **No secrets on the machines.** The client never sees a Cloudflare token.
+  It only says "I'm here", and the Worker reads the public IP from the
+  request and updates DNS itself.
+- **Install with one line and no questions**, on Linux, macOS and Windows.
+  Everything else (which zone, which record) is decided in the dashboard.
+- **One dashboard** with every record, its IP, whether the client is
+  connected and when it last updated.
+- **Remote upgrades**, so I never have to log in to a machine again.
+- **Nothing to host.** It runs entirely on Cloudflare (Worker, D1, R2,
+  Access), within the free plans for a setup like mine.
+
+If you have one machine, a simple updater script is probably all you need.
+If you have several, in places you can't easily reach, this is for you.
 
 ## How it works
 
@@ -87,3 +121,7 @@ CI runs the same checks on every push
 
 Each release deploys automatically once the one-time Cloudflare setup is
 done; pushes to `development` alone never reach production. See **[docs/deployment.md](docs/deployment.md)**.
+
+## License
+
+[MIT](LICENSE)
