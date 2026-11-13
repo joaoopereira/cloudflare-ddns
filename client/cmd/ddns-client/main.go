@@ -24,10 +24,12 @@ import (
 	"github.com/joaoopereira/cloudflare-ddns/client/internal/upgrade"
 )
 
-// Set at build time with -ldflags "-X main.version=v1.2.3".
+// Set at build time with -ldflags "-X main.version=v1.2.3". defaultServer is
+// empty in released binaries (the installers pass --server); your own builds
+// can bake one in with -X main.defaultServer=https://ddns.example.com.
 var (
 	version       = "dev"
-	defaultServer = "https://ddns.apps.joaoopereira.com"
+	defaultServer = ""
 )
 
 // exitRestart tells the service manager to start the (upgraded) binary again.
@@ -42,7 +44,7 @@ func main() {
 	opts := options{}
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.StringVar(&opts.configPath, "config", config.DefaultPath(), "path to the config file")
-	flag.StringVar(&opts.serverURL, "server", "", "server URL (default "+defaultServer+", or the one saved in the config)")
+	flag.StringVar(&opts.serverURL, "server", "", "server URL, e.g. https://ddns.example.com (default: the one saved in the config)")
 	flag.Parse()
 
 	if *showVersion {
