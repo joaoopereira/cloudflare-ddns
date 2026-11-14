@@ -192,7 +192,7 @@ adminApi.post("/clients/:id/upgrade", async (c) => {
   return c.json({ ok: true });
 });
 
-adminApi.get("/releases/latest", async (c) => c.json({ version: await latestVersion(c.env.RELEASES) }));
+adminApi.get("/releases/latest", async (c) => c.json({ version: await latestVersion(c.env) }));
 
 adminApi.get("/settings", async (c) => c.json({ settings: await getSettings(c.env.DB) }));
 

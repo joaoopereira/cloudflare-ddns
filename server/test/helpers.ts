@@ -36,7 +36,7 @@ export async function resetDb(db: D1Database) {
 }
 
 export function makeEnv(db: D1Database, extra: Partial<Env> = {}): Env {
-  return { DB: db, PUBLIC_URL: "http://localhost", CF_API_TOKEN: "test-token", ALLOW_INSECURE_ADMIN: "true", ...extra };
+  return { DB: db, CF_API_TOKEN: "test-token", ALLOW_INSECURE_ADMIN: "true", ...extra };
 }
 
 export function call(env: Env, method: string, path: string, body?: unknown, ip = "203.0.113.10") {

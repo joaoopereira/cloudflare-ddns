@@ -1,14 +1,61 @@
 # Deployment
 
-One-time setup to run cloudflare-ddns in your own Cloudflare account, in a
-fork of this repository. `ddns.example.com` stands for the hostname you
-choose; its zone (`example.com`) must be in that account. After
+cloudflare-ddns runs in your own Cloudflare account. There are two ways to
+put it there:
+
+- **[The Deploy to Cloudflare button](#option-a-the-deploy-to-cloudflare-button)**:
+  a few clicks, nothing to install. Best for most people.
+- **[GitHub Actions in a fork](#option-b-github-actions-in-a-fork)**: every
+  release you cut deploys itself, on a custom domain from the start. Best if
+  you want to change the code.
+
+In this guide `ddns.example.com` stands for the address of your deployment.
+
+## Option A: the Deploy to Cloudflare button
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/joaoopereira/cloudflare-ddns)
+
+1. Click the button and sign in to Cloudflare. It copies this repository to
+   your GitHub or GitLab account, creates the D1 database and the R2 bucket,
+   and asks for three secrets:
+   - `CF_API_TOKEN`: create a [custom API token](https://dash.cloudflare.com/profile/api-tokens)
+     with **Zone → Zone → Read** and **Zone → DNS → Edit** on every zone
+     whose records your machines should manage.
+   - `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`: you get these in step 3; enter
+     `todo` for now. Until they are right the dashboard shows nothing and
+     `/api/admin/*` refuses every request.
+2. Deploy. The app comes up at `https://cloudflare-ddns.<your-subdomain>.workers.dev`;
+   `/health` there should answer `{"ok":true,"db":true,...}`.
+3. Protect the dashboard with Cloudflare Access, following
+   [Cloudflare Access for the dashboard](#3-cloudflare-access-for-the-dashboard)
+   below with your app's address as the application domain. Then put the
+   team domain and AUD tag in the Worker's **Settings → Variables and
+   Secrets** (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`).
+4. Optional: add your own hostname under the Worker's **Settings → Domains &
+   Routes → Add → Custom domain**, and use it in the Access applications.
+   Machines keep talking to the address they were installed from, so pick the
+   address before you install clients.
+5. Open the dashboard, click **Listen for new clients** and install your first
+   machine ([user guide](user-guide.md)).
+
+There is nothing to release: client binaries are fetched from this project's
+[GitHub Releases](https://github.com/joaoopereira/cloudflare-ddns/releases)
+into your R2 bucket the first time they are needed (the `RELEASES_REPO`
+variable), and machines download them from your Worker. To update the app
+later, sync your copy of the repository with this one; Cloudflare redeploys
+it on every push. The dashboard footer shows `dev` as the app version on
+deployments made this way.
+
+## Option B: GitHub Actions in a fork
+
+One-time setup in a fork of this repository; the zone of your hostname
+(`example.com`) must be in your Cloudflare account. After
 this, every release deploys automatically: production only ever runs a
 released version, never unreleased commits from `development`
 ([`.github/workflows/release.yml`](../.github/workflows/release.yml) calls
 [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)).
 
-## 1. D1 database and R2 bucket
+### 1. D1 database and R2 bucket
 
 Create both once in your Cloudflare account:
 
@@ -17,7 +64,7 @@ npx wrangler d1 create ddns                 # note the database_id it prints
 npx wrangler r2 bucket create ddns-releases
 ```
 
-## 2. Create two Cloudflare API tokens
+### 2. Create two Cloudflare API tokens
 
 At **Cloudflare dashboard → My Profile → API Tokens → Create Token → Create
 Custom Token**:
@@ -36,7 +83,7 @@ Custom Token**:
 
 Keeping them separate means the running Worker can only edit DNS, not deploy code.
 
-## 3. Cloudflare Access for the dashboard
+### 3. Cloudflare Access for the dashboard
 
 In **Zero Trust → Access → Applications → Add an application → Self-hosted**:
 
@@ -71,7 +118,7 @@ The Worker verifies the Access login itself on `/api/admin/*`, so the admin
 API stays protected even if the Access configuration changes. Until the AUD
 and team domain are set, `/api/admin/*` answers `503`.
 
-## 4. Add GitHub repository secrets and variables
+### 4. Add GitHub repository secrets and variables
 
 Under **GitHub → repository → Settings → Secrets and variables → Actions →
 New repository secret**:
@@ -91,9 +138,9 @@ On the **Variables** tab of the same page, add (they are not secret):
 | `DDNS_HOSTNAME` | the hostname of the app, e.g. `ddns.example.com` |
 | `D1_DATABASE_ID` | the `database_id` printed in step 1 |
 
-The deploy workflow writes these two over the placeholders in
-`server/wrangler.toml` (the custom domain, `PUBLIC_URL` and the D1 id) and
-fails with a clear error if either is missing.
+The deploy workflow writes these two into `wrangler.toml` (the custom
+domain, with the workers.dev address turned off, and the D1 id) and fails
+with a clear error if either is missing.
 
 When a release is cut (Actions → Release client → Run workflow with a version
 like `v1.2.0`), the release workflow tags `development`, publishes the client
@@ -107,7 +154,7 @@ accepts release tags.
 
 The first deploy creates the DNS record and certificate of the custom domain.
 
-## 5. Publish the first client release
+### 5. Publish the first client release
 
 Installers download the latest release from the Worker, so publish one before
 installing any machine:
@@ -123,7 +170,7 @@ creates the tag itself.
 `.github/workflows/release.yml` builds every platform, uploads the files to
 R2 and creates a GitHub Release.
 
-## 6. Check it
+### 6. Check it
 
 - `https://ddns.example.com/health` returns `{"ok":true,"db":true,"version":"v1.0.0","commit":"abc1234"}`.
   The deploy workflow sets `version` (the release tag) and `commit` (short
@@ -134,7 +181,7 @@ R2 and creates a GitHub Release.
 
 ## Local development
 
-Create `server/.dev.vars` (gitignored):
+Create `.dev.vars` at the repository root (gitignored):
 
 ```
 CF_API_TOKEN=<a token for a test zone>
@@ -145,8 +192,8 @@ ALLOW_INSECURE_ADMIN=true
 
 ## Manual deploy
 
-Replace `ddns.example.com` (twice) and `REPLACE_WITH_D1_DATABASE_ID` in
-`server/wrangler.toml` with your values (don't commit them), then:
+Replace `REPLACE_WITH_D1_DATABASE_ID` in `wrangler.toml` with your database
+id (don't commit it), then:
 
 ```bash
 cd server

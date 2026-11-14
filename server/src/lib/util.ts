@@ -1,7 +1,7 @@
 export const now = (): number => Math.floor(Date.now() / 1000);
 
-export async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+export async function sha256Hex(input: string | ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", typeof input === "string" ? new TextEncoder().encode(input) : input);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 

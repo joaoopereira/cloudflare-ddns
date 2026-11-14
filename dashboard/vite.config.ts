@@ -16,7 +16,7 @@ function git(args: string): string | null {
 const appVersion = process.env.APP_VERSION || git("describe --tags --abbrev=0") || "dev";
 const appCommit = process.env.APP_COMMIT || git("rev-parse --short HEAD") || "";
 
-// The Worker serves dist/ as static assets (see server/wrangler.toml).
+// The Worker serves dist/ as static assets (see wrangler.toml).
 // In development, run the Worker on :8787 (with ALLOW_INSECURE_ADMIN=true)
 // and `npm run dev` here; API calls are proxied to it.
 export default defineConfig({

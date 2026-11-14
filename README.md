@@ -14,8 +14,12 @@ manage them remotely.
   <img src="docs/images/clients.png" alt="The dashboard: four clients with their records, IPs, status and versions">
 </picture>
 
-You deploy it to your own Cloudflare account ([docs/deployment.md](docs/deployment.md));
-`ddns.example.com` in the docs stands for your hostname.
+It runs entirely in your own Cloudflare account, and one click puts it there:
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/joaoopereira/cloudflare-ddns)
+
+The [deployment guide](docs/deployment.md) covers the few steps after the
+click (an API token and Cloudflare Access for the dashboard).
 
 ## Why I built this
 
@@ -106,6 +110,7 @@ them, and managing records.
 | `client/` | Go client agent (`cmd/ddns-client`) |
 | `install/` | `install.sh` / `install.ps1` one-liner installers |
 | `docs/` | User guide, API reference and deployment guide |
+| `wrangler.toml`, `package.json` | Worker configuration and the build/deploy scripts the deploy button runs |
 | `.claude/` | Project skills and settings for developing with Claude Code |
 
 ## Development
@@ -120,7 +125,7 @@ npm run db:migrate:local   # create the local D1 schema
 npm run dev                # http://localhost:8787
 npm run typecheck && npm test
 
-# Dashboard (with the Worker running on :8787 and ALLOW_INSECURE_ADMIN=true in server/.dev.vars)
+# Dashboard (with the Worker running on :8787 and ALLOW_INSECURE_ADMIN=true in .dev.vars)
 cd dashboard
 npm ci
 npm run dev                # http://localhost:5173, proxies /api to the Worker
@@ -136,8 +141,9 @@ CI runs the same checks on every push
 
 ## Deployment
 
-Each release deploys automatically once the one-time Cloudflare setup is
-done; pushes to `development` alone never reach production. See **[docs/deployment.md](docs/deployment.md)**.
+Use the **Deploy to Cloudflare** button above, or fork the repository and let
+GitHub Actions deploy each release you cut. Both are described in
+**[docs/deployment.md](docs/deployment.md)**.
 
 ## License
 

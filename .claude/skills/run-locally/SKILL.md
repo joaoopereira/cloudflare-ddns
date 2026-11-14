@@ -11,7 +11,7 @@ description: Run the cloudflare-ddns Worker locally with a local D1 database and
    npm ci
    npm run db:migrate:local
    ```
-2. Local secrets go in `server/.dev.vars` (gitignored), e.g.
+2. Local secrets go in `.dev.vars` at the repo root (gitignored), e.g.
    `CF_API_TOKEN=...`. Without a token, DNS calls must be skipped or mocked;
    never use a production token for experiments unless the user asks.
 3. Start the Worker in the background: `npm run dev` (serves http://localhost:8787).
@@ -40,13 +40,13 @@ description: Run the cloudflare-ddns Worker locally with a local D1 database and
    Then `POST /api/admin/clients/<id>/upgrade {"version":"v0.0.2"}` after
    uploading a v0.0.2 the same way; the client exits with code 75 after
    replacing itself.
-7. Stop the dev server when done. Reset local state with `rm -rf server/.wrangler`.
+7. Stop the dev server when done. Reset local state with `rm -rf .wrangler`.
 
 ## Dashboard
 
 - Build once so the Worker serves it: `cd dashboard && npm ci && npm run build`,
   then open http://localhost:8787 (needs `ALLOW_INSECURE_ADMIN=true` in
-  `server/.dev.vars`).
+  `.dev.vars` at the repo root).
 - For live reload run `npm run dev` in `dashboard/` (http://localhost:5173,
   proxies `/api` to the Worker on :8787).
 - Seed sample data with `npx wrangler d1 execute ddns --local --command "INSERT INTO clients ..."`

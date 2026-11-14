@@ -56,7 +56,7 @@ The client should use `interval` from each response as its next delay.
 | --- | --- |
 | `GET /health` | `{"ok":true,"db":true,"version":"v1.1.0","commit":"abc1234"}`. `version` is the deployed release tag (`dev` when not set by the deploy workflow), `commit` the short commit SHA or `null`. |
 | `GET /install.sh`, `GET /install.ps1` | Installers, with this server's URL filled in |
-| `GET /download/<version>/<asset>` | Client binaries from the `ddns-releases` R2 bucket. `version` is `vX.Y.Z` or `latest`; the response's `X-Release-Version` header names the resolved version. Assets: `ddns-client_<os>_<arch>[.exe]` (os: linux, darwin, windows; arch: amd64, arm64, arm) and `checksums.txt`. |
+| `GET /download/<version>/<asset>` | Client binaries from the `ddns-releases` R2 bucket. With the `RELEASES_REPO` variable set, a release missing from the bucket is first copied from that GitHub repository's releases (binaries are checked against the release's `checksums.txt`), and `latest` follows its newest release (refreshed hourly). `version` is `vX.Y.Z` or `latest`; the response's `X-Release-Version` header names the resolved version. Assets: `ddns-client_<os>_<arch>[.exe]` (os: linux, darwin, windows; arch: amd64, arm64, arm) and `checksums.txt`. |
 
 ## Admin API (`/api/admin/*`)
 

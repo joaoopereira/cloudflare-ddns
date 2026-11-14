@@ -1,0 +1,5 @@
+# Secrets of the Worker. The "Deploy to Cloudflare" button asks for these.
+# For local development copy this file to .dev.vars (gitignored) instead.
+CF_API_TOKEN=          # Cloudflare API token: Zone Read + DNS Edit on the managed zones
+ACCESS_TEAM_DOMAIN=    # e.g. myteam.cloudflareaccess.com
+ACCESS_AUD=            # AUD tag of the Access application for the dashboard

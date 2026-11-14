@@ -1,0 +1,25 @@
+{
+  "name": "cloudflare-ddns",
+  "private": true,
+  "description": "Self-hosted dynamic DNS for domains on Cloudflare",
+  "scripts": {
+    "build": "npm --prefix server ci && npm --prefix server run build:dashboard",
+    "deploy": "cd server && npx wrangler d1 migrations apply DB --remote && npx wrangler deploy"
+  },
+  "cloudflare": {
+    "bindings": {
+      "CF_API_TOKEN": {
+        "description": "Cloudflare API token the app uses to update DNS records. Create a [custom token](https://dash.cloudflare.com/profile/api-tokens) with **Zone → Zone → Read** and **Zone → DNS → Edit** on the zones your machines will use."
+      },
+      "ACCESS_TEAM_DOMAIN": {
+        "description": "Your Cloudflare Access team domain, e.g. `myteam.cloudflareaccess.com`. If you haven't set up Access yet, enter `todo` and change it after the deploy (see docs/deployment.md)."
+      },
+      "ACCESS_AUD": {
+        "description": "Application Audience (AUD) tag of the Access application that protects the dashboard. Enter `todo` for now if you don't have it; the dashboard stays locked until it is set."
+      },
+      "RELEASES_REPO": {
+        "description": "GitHub repository the client binaries are fetched from. Leave the default unless you publish your own builds."
+      }
+    }
+  }
+}

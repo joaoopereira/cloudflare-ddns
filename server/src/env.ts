@@ -1,6 +1,5 @@
 export interface Env {
   DB: D1Database;
-  PUBLIC_URL: string;
   /** Deployed app version (latest git tag) and short commit, set by the deploy workflow. */
   APP_VERSION?: string;
   APP_COMMIT?: string;
@@ -16,6 +15,11 @@ export interface Env {
   ASSETS?: Fetcher;
   /** R2 bucket with client release binaries (<version>/<asset>, latest.txt). */
   RELEASES?: R2Bucket;
+  /**
+   * GitHub "owner/repo" whose public releases hold the client binaries. When
+   * set, releases missing from the bucket are fetched from there on demand.
+   */
+  RELEASES_REPO?: string;
   /** Workers rate-limit binding for registrations (per IP). Optional. */
   REGISTER_LIMITER?: RateLimit;
 }

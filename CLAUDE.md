@@ -16,16 +16,25 @@ docs/user-guide.md for user-visible behavior.
   IP goes to `blocked_ips` until the user unblocks it. Pending/rejected
   clients must never touch DNS.
 - "Remote update" = upgrading the client binary (target version in settings).
-- Self-hostable: nothing in the repo names a deployment. The hostname and D1
-  id are the repository variables `DDNS_HOSTNAME` and `D1_DATABASE_ID`
-  (placeholders in `server/wrangler.toml`); docs use `ddns.example.com`.
+- Self-hostable: nothing in the repo names a deployment, and the Worker
+  takes its public URL from the request. Two ways to deploy: the "Deploy to
+  Cloudflare" button (root `package.json` build/deploy scripts, secrets from
+  `.dev.vars.example`, serves on workers.dev) and the GitHub Release workflow
+  (adds the custom domain and D1 id to `wrangler.toml` from the repository
+  variables `DDNS_HOSTNAME` and `D1_DATABASE_ID`). Keep both working. Docs
+  use `ddns.example.com`.
 - Dashboard auth: Cloudflare Access; admin API also validates the Access JWT.
   Public paths: `/api/client/*`, `/download/*`, `/install.sh`, `/install.ps1`, `/health`.
-- Clients never download from GitHub. Releases are
-  uploaded to the `ddns-releases` R2 bucket and served by the Worker at
-  `/download/<version>/<asset>` (`latest.txt` points at the newest).
+- Clients never download from GitHub: the Worker serves releases from the
+  `ddns-releases` R2 bucket at `/download/<version>/<asset>` (`latest.txt`
+  points at the newest). The release workflow uploads them; a release missing
+  from the bucket is copied on demand from the public GitHub Releases of
+  `RELEASES_REPO` (checksum-verified).
 
 ## Layout
+- `wrangler.toml` and `package.json` at the root: Worker config (paths point
+  into `server/` and `dashboard/`; wrangler finds it from `server/` too) and
+  the deploy button's build/deploy scripts.
 - `server/`: Worker (Hono, TypeScript, D1). Tests: vitest + wrangler
   `getPlatformProxy` with an in-memory D1 (see `server/test/health.test.ts`).
   Routes: `src/routes/client.ts` (public client API), `src/routes/admin.ts`
@@ -46,7 +55,7 @@ docs/user-guide.md for user-visible behavior.
   `-ldflags "-X main.version=..."`. Releases: tag `vX.Y.Z` (release-client skill).
 - `install/`: `install.sh` (POSIX sh; systemd/launchd), `install.ps1`
   (Windows service). The Worker bundles them as text and replaces
-  `__DDNS_SERVER_URL__` with `PUBLIC_URL`. `DDNS_SERVER` overrides the server
+  `__DDNS_SERVER_URL__` with the origin of the request. `DDNS_SERVER` overrides the server
   and `DDNS_NO_SERVICE=1` skips service setup (for testing in containers).
 
 ## Checks (run before every push)

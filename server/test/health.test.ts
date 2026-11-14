@@ -15,7 +15,7 @@ afterAll(async () => {
 
 describe("GET /health", () => {
   it("reports the database as ready once migrations are applied", async () => {
-    const res = await app.request("/health", {}, { DB: db, PUBLIC_URL: "http://localhost" });
+    const res = await app.request("/health", {}, { DB: db });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, db: true, version: "dev", commit: null });
   });
@@ -24,7 +24,7 @@ describe("GET /health", () => {
     const res = await app.request(
       "/health",
       {},
-      { DB: db, PUBLIC_URL: "http://localhost", APP_VERSION: "v1.2.3", APP_COMMIT: "abc1234" },
+      { DB: db, APP_VERSION: "v1.2.3", APP_COMMIT: "abc1234" },
     );
     expect(await res.json()).toMatchObject({ version: "v1.2.3", commit: "abc1234" });
   });

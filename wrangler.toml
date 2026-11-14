@@ -1,21 +1,20 @@
 name = "cloudflare-ddns"
-main = "src/index.ts"
+main = "server/src/index.ts"
 compatibility_date = "2026-10-01"
 
-# The app is served on a Worker custom domain, whose zone must be in the same
-# Cloudflare account. ddns.example.com (here and in PUBLIC_URL) and the D1
-# database_id are placeholders: the deploy workflow fills them from the
-# repository variables DDNS_HOSTNAME and D1_DATABASE_ID (docs/deployment.md).
-routes = [
-  { pattern = "ddns.example.com", custom_domain = true }
-]
+# No route is set here, so a plain deploy (for example the "Deploy to
+# Cloudflare" button) serves the app on its workers.dev address; add a custom
+# domain later in the Cloudflare dashboard. The GitHub deploy workflow instead
+# adds the custom domain from the repository variable DDNS_HOSTNAME.
 
-# The D1 database (`npx wrangler d1 create ddns`).
+# The D1 database (`npx wrangler d1 create ddns`). The id is a placeholder: the
+# deploy button creates the database and fills it in, and the GitHub deploy
+# workflow takes it from the repository variable D1_DATABASE_ID.
 [[d1_databases]]
 binding = "DB"
 database_name = "ddns"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
-migrations_dir = "migrations"
+migrations_dir = "server/migrations"
 
 # Client release binaries (uploaded by .github/workflows/release.yml).
 # Create once with `npx wrangler r2 bucket create ddns-releases`.
@@ -23,10 +22,10 @@ migrations_dir = "migrations"
 binding = "RELEASES"
 bucket_name = "ddns-releases"
 
-# The dashboard (built from ../dashboard) is served as static assets. API,
+# The dashboard (built from dashboard/) is served as static assets. API,
 # download and installer paths always go to the Worker.
 [assets]
-directory = "../dashboard/dist"
+directory = "dashboard/dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*", "/download/*", "/install.sh", "/install.ps1", "/health"]
@@ -48,11 +47,15 @@ namespace_id = "1001"
 simple = { limit = 5, period = 60 }
 
 [vars]
-PUBLIC_URL = "https://ddns.example.com"
+# GitHub repository whose public releases hold the client binaries. A release
+# that isn't in the R2 bucket yet is copied from there on first use. Point it
+# at your fork if you publish your own client builds, or remove it to serve
+# only what you upload to the bucket.
+RELEASES_REPO = "joaoopereira/cloudflare-ddns"
 
 # Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
 #   CF_API_TOKEN        Cloudflare API token with Zone:Read + DNS:Edit on the managed zones
 #   ACCESS_TEAM_DOMAIN  Cloudflare Access team domain, e.g. myteam.cloudflareaccess.com
 #   ACCESS_AUD          Audience (AUD) tag of the Access application for the dashboard
-# Local development only (server/.dev.vars):
+# Local development only (.dev.vars next to this file):
 #   ALLOW_INSECURE_ADMIN=true  skips the Access check on /api/admin
