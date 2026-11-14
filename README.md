@@ -1,9 +1,18 @@
-# cloudflare-ddns
+<p align="center">
+  <img src="docs/images/logo.svg" alt="cloudflare-ddns logo" width="96" height="96">
+</p>
+
+<h1 align="center">cloudflare-ddns</h1>
 
 Self-hosted dynamic DNS for domains on Cloudflare. A small client runs on each
 machine, and a Cloudflare Worker keeps that machine's DNS record pointed at its
 current public IP. A web dashboard shows every client and record and lets you
 manage them remotely.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/clients-dark.png">
+  <img src="docs/images/clients.png" alt="The dashboard: four clients with their records, IPs, status and versions">
+</picture>
 
 You deploy it to your own Cloudflare account ([docs/deployment.md](docs/deployment.md));
 `ddns.example.com` in the docs stands for your hostname.
@@ -75,6 +84,14 @@ If you have several, in places you can't easily reach, this is for you.
 - **Dashboard login** is handled by Cloudflare Access.
 
 ## Using it
+
+Adding a machine takes one command on the machine and one click in the
+dashboard, which also works as an installable app on a phone:
+
+<p>
+  <img src="docs/images/add-machine.png" alt="Listening for new clients: install commands and a pending client waiting for approval" width="72%">
+  <img src="docs/images/clients-phone.png" alt="The clients list on a phone" width="24%">
+</p>
 
 See the **[user guide](docs/user-guide.md)** for installing clients, approving
 them, and managing records.

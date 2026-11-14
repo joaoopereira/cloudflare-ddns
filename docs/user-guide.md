@@ -58,6 +58,8 @@ the app sends you back through the Access login (or shows **Sign in again**).
    a Windows service on Windows) and starts immediately. Running the
    one-liner again repairs the install and updates it to the latest release.
 
+   ![Listening for new clients, with the install commands and a pending client](images/add-machine.png)
+
 
 3. Within a few seconds the machine appears under **Pending approval** with
    its public IP, hostname and OS, plus a countdown to the approval timeout.
@@ -90,10 +92,14 @@ is shown by its hostname. Versions behind the latest release are marked
 **outdated**. A ⚠ line under the record shows the last error, such as a
 failed DNS update or upgrade. The page refreshes every few seconds.
 
+![The clients list](images/clients.png)
+
 On a phone, the navigation moves to a tab bar at the bottom of the screen and
 each client becomes a card: name and record, current IP and when it last
 changed, hostname and version, then its status. Tap **⋯** on a card for its
 actions. Blocked IPs are shown as cards the same way.
+
+<img src="images/clients-phone.png" alt="The clients list on a phone" width="320">
 
 Above the table, **Installed** sums up which client versions are running
 (for example "3 on 1.0.0, 1 on 0.9.0").
@@ -133,6 +139,8 @@ Click **Unblock** to allow it again. A client behind that IP reappears under
 **Activity** lists recent events, each with the client it's about:
 registrations, approvals, renames, rejections, blocks and unblocks, IP changes,
 DNS errors, upgrades and settings changes.
+
+![The activity list](images/activity.png)
 
 ## App version
 
