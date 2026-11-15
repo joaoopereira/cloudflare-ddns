@@ -75,6 +75,29 @@ jobs:
           cache-dependency-path: client/go.sum
       - run: go vet ./... && go test ./...
 
+  test-server:
+    needs: version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.version.outputs.version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build dashboard
+        run: npm run build:dashboard
+
   build:
     needs: version
     runs-on: ubuntu-latest
@@ -119,7 +142,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: [version, test, build]
+    needs: [version, test, test-server, build]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
