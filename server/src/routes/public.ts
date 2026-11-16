@@ -10,9 +10,21 @@ export const publicRoutes = new Hono<AppEnv>();
 const ASSET_RE = /^(ddns-client_(linux|darwin|windows)_(amd64|arm64|arm)(\.exe)?|checksums\.txt)$/;
 const VERSION_RE = /^v\d+\.\d+\.\d+([-.+][0-9A-Za-z.-]+)?$/;
 
-/** An installer pointing at the address it was requested from, so no hostname needs configuring. */
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * An installer pointing at the address it was requested from, so no hostname
+ * needs configuring. Always https (except on loopback, for local development):
+ * the client sends its secret and downloads binaries from this URL.
+ */
+function installerOrigin(requestUrl: string): string {
+  const url = new URL(requestUrl);
+  if (!LOOPBACK.has(url.hostname)) url.protocol = "https:";
+  return url.origin;
+}
+
 function script(body: string, requestUrl: string, type: string) {
-  return new Response(body.replaceAll("__DDNS_SERVER_URL__", new URL(requestUrl).origin), {
+  return new Response(body.replaceAll("__DDNS_SERVER_URL__", installerOrigin(requestUrl)), {
     headers: { "Content-Type": `${type}; charset=utf-8`, "Cache-Control": "no-store" },
   });
 }

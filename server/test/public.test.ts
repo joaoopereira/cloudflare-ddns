@@ -25,6 +25,12 @@ describe("installers", () => {
     expect(body).toContain("https://ddns.example.com");
     expect(body).not.toContain("__DDNS_SERVER_URL__");
   });
+
+  it("always points clients at https, except on loopback", async () => {
+    const fetchScript = async (url: string) => (await app.request(url, {}, makeEnv(db))).text();
+    expect(await fetchScript("http://ddns.example.com/install.sh")).toContain('"${DDNS_SERVER:-https://ddns.example.com}"');
+    expect(await fetchScript("http://localhost:8787/install.sh")).toContain('"${DDNS_SERVER:-http://localhost:8787}"');
+  });
 });
 
 describe("GET /download", () => {

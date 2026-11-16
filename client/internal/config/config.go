@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -67,6 +68,9 @@ func LoadOrCreate(path, serverURL string) (*Config, error) {
 	if cfg.ServerURL == "" {
 		return nil, errors.New("no server URL configured")
 	}
+	if err := checkServerURL(cfg.ServerURL); err != nil {
+		return nil, err
+	}
 	if changed {
 		if err := Save(path, cfg); err != nil {
 			return nil, err
@@ -97,4 +101,20 @@ func randomHex(n int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+// checkServerURL requires https, because the secret and upgrade binaries go
+// over this URL. Plain http is allowed only on loopback, for local testing.
+func checkServerURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return fmt.Errorf("invalid server URL %q", raw)
+	}
+	switch h := u.Hostname(); {
+	case u.Scheme == "https":
+		return nil
+	case u.Scheme == "http" && (h == "localhost" || h == "127.0.0.1" || h == "::1"):
+		return nil
+	}
+	return fmt.Errorf("server URL %q must use https", raw)
 }

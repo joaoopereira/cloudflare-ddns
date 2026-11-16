@@ -32,3 +32,20 @@ func TestLoadOrCreateRequiresServer(t *testing.T) {
 		t.Fatal("expected an error without a server URL")
 	}
 }
+
+func TestServerURLMustBeHTTPS(t *testing.T) {
+	for url, ok := range map[string]bool{
+		"https://ddns.example.com":  true,
+		"http://localhost:8787":     true,
+		"http://127.0.0.1:8787":     true,
+		"http://ddns.example.com":   false,
+		"ftp://ddns.example.com":    false,
+		"ddns.example.com":          false,
+		"http://localhost.evil.com": false,
+	} {
+		_, err := LoadOrCreate(filepath.Join(t.TempDir(), "c.json"), url)
+		if (err == nil) != ok {
+			t.Errorf("%s: err=%v, want ok=%v", url, err, ok)
+		}
+	}
+}
