@@ -67,6 +67,12 @@ function Install-Ddns {
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $tmp
   }
 
+  # The config holds the client secret: only SYSTEM and Administrators may read it
+  # (ProgramData would otherwise let every local user read it).
+  New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+  & icacls.exe $ConfigDir /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' /Q | Out-Null
+  if ($LASTEXITCODE -ne 0) { Fail "could not restrict access to $ConfigDir" }
+
   $binPath = "`"$Exe`" --server $Server"
   if (Get-Service -Name $Name -ErrorAction SilentlyContinue) {
     & sc.exe config $Name binPath= $binPath start= auto | Out-Null
