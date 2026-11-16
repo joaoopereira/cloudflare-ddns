@@ -1,4 +1,6 @@
 const API = "https://api.cloudflare.com/client/v4";
+/** Comment on records this app created; only these are adopted by name. */
+export const MANAGED_COMMENT = "managed by cloudflare-ddns";
 
 export interface Zone {
   id: string;
@@ -9,6 +11,7 @@ export interface DnsRecord {
   id: string;
   name: string;
   content: string;
+  comment?: string | null;
 }
 
 export class CloudflareError extends Error {
@@ -69,7 +72,7 @@ export class CloudflareApi {
       content: ip,
       ttl: 60,
       proxied: false,
-      comment: "managed by cloudflare-ddns",
+      comment: MANAGED_COMMENT,
     });
   }
 
@@ -87,7 +90,9 @@ export class CloudflareApi {
 
   /**
    * Point `name` at `ip`, reusing `recordId` when it still exists, otherwise
-   * finding an existing A record by name or creating one. Returns the record id.
+   * adopting an A record of that name this app created, or creating one.
+   * A record of that name made by someone else is never overwritten.
+   * Returns the record id.
    */
   async upsertARecord(zoneId: string, name: string, ip: string, recordId: string | null): Promise<string> {
     if (recordId) {
@@ -100,6 +105,12 @@ export class CloudflareApi {
     }
     const existing = await this.findARecord(zoneId, name);
     if (existing) {
+      if (existing.comment !== MANAGED_COMMENT) {
+        throw new CloudflareError(
+          `${name} already exists and is not managed by cloudflare-ddns; delete it or set its comment to "${MANAGED_COMMENT}"`,
+          409,
+        );
+      }
       return existing.content === ip ? existing.id : (await this.updateARecord(zoneId, existing.id, ip)).id;
     }
     return (await this.createARecord(zoneId, name, ip)).id;

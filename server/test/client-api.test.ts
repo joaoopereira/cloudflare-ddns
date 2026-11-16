@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { expirePendingClients } from "../src/lib/clients";
+import { MANAGED_COMMENT } from "../src/lib/cloudflare";
 import type { Env } from "../src/env";
 import { call, clientCreds, makeEnv, mockCloudflare, resetDb, setupDb } from "./helpers";
 
@@ -134,7 +135,7 @@ describe("POST /api/client/heartbeat", () => {
 
     const first = await call(env, "POST", "/api/client/heartbeat", creds, "203.0.113.10");
     expect(await first.json()).toMatchObject({ status: "approved", dns: "updated" });
-    expect(cf.records).toEqual([{ id: "rec-1", name: "home1.example.com", content: "203.0.113.10" }]);
+    expect(cf.records).toEqual([{ id: "rec-1", name: "home1.example.com", content: "203.0.113.10", comment: MANAGED_COMMENT }]);
 
     cf.calls.length = 0;
     const same = await call(env, "POST", "/api/client/heartbeat", creds, "203.0.113.10");
@@ -148,16 +149,27 @@ describe("POST /api/client/heartbeat", () => {
     expect(row).toEqual({ current_ip: "198.51.100.99", record_id: "rec-1" });
   });
 
-  it("adopts an existing record and recreates one deleted outside the app", async () => {
+  it("adopts a record it created and recreates one deleted outside the app", async () => {
     const cf = mockCloudflare();
-    cf.records.push({ id: "pre-existing", name: "home1.example.com", content: "192.0.2.1" });
+    cf.records.push({ id: "pre-existing", name: "home1.example.com", content: "192.0.2.1", comment: MANAGED_COMMENT });
     const creds = await registerAndApprove(1);
     await call(env, "POST", "/api/client/heartbeat", creds, "203.0.113.10");
-    expect(cf.records).toEqual([{ id: "pre-existing", name: "home1.example.com", content: "203.0.113.10" }]);
+    expect(cf.records).toMatchObject([{ id: "pre-existing", name: "home1.example.com", content: "203.0.113.10" }]);
 
     cf.records.length = 0;
     await call(env, "POST", "/api/client/heartbeat", creds, "203.0.113.11");
     expect(cf.records).toMatchObject([{ name: "home1.example.com", content: "203.0.113.11" }]);
+  });
+
+  it("never overwrites a record it did not create", async () => {
+    const cf = mockCloudflare();
+    cf.records.push({ id: "theirs", name: "home1.example.com", content: "192.0.2.1" });
+    const creds = await registerAndApprove(1);
+    const res = await call(env, "POST", "/api/client/heartbeat", creds, "203.0.113.10");
+    expect(await res.json()).toMatchObject({ dns: "error" });
+    expect(cf.records).toEqual([{ id: "theirs", name: "home1.example.com", content: "192.0.2.1" }]);
+    const row = await db.prepare("SELECT last_error FROM clients").first<{ last_error: string }>();
+    expect(row?.last_error).toContain("not managed by cloudflare-ddns");
   });
 
   it("records DNS errors without failing the heartbeat", async () => {

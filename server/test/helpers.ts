@@ -64,6 +64,7 @@ interface FakeRecord {
   id: string;
   name: string;
   content: string;
+  comment?: string;
 }
 
 /**
@@ -93,7 +94,7 @@ export function mockCloudflare() {
       return ok(records.filter((r) => r.name === url.searchParams.get("name")));
     }
     if (method === "POST" && path === `/zones/${zone.id}/dns_records`) {
-      const rec = { id: `rec-${nextId++}`, name: body.name, content: body.content };
+      const rec = { id: `rec-${nextId++}`, name: body.name, content: body.content, comment: body.comment };
       records.push(rec);
       return ok(rec);
     }

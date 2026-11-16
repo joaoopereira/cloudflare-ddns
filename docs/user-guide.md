@@ -71,7 +71,10 @@ the app sends you back through the Access login (or shows **Sign in again**).
 5. Click **Stop listening** when you're done.
 
 From now on the record follows the machine's public IP. If the record doesn't
-exist yet, it's created on the first heartbeat after approval.
+exist yet, it's created on the first heartbeat after approval. The app never
+overwrites an A record it didn't create: if one with that name already exists,
+the client shows an error until you delete that record or set its comment to
+`managed by cloudflare-ddns` in Cloudflare.
 
 ### If you don't approve in time
 
