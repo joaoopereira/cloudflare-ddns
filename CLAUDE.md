@@ -66,12 +66,19 @@ docs/user-guide.md for user-visible behavior.
 
 ## Workflow
 - Backlog lives in GitHub issues (epics #1-#6 with sub-issues).
-- No pull requests: commit directly to `development` (the default branch)
-  with `Closes #N` in the message, after the checks pass. Pushes to
-  `development` do NOT deploy: production only ever runs a released version.
-  Cutting a release (Release workflow, manual run with a version) tags,
-  publishes the client and then deploys that tag. Never deploy unreleased
-  code; ask João before cutting a release.
+- Branches: `development` is staging, `main` is stable. Commit work directly
+  to `development` (the default branch, no feature PRs) with `Closes #N` in
+  the message, after the checks pass. Each push to `development` deploys to
+  the staging Worker once CI passes (skipped until `STAGING_HOSTNAME` and
+  `STAGING_D1_DATABASE_ID` are set). Promote to `main` with a pull request
+  from `development` (merge commit, never squash/rebase); the Sync
+  development workflow merges `main` back so tags stay reachable.
+- Releases come only from `main`: the Release workflow refuses manual runs
+  on other refs and tags not on `main`. A release tags, publishes the client
+  and deploys that tag to production; production only ever runs a released
+  version. Never deploy unreleased code to production; ask João before
+  merging a promotion PR or cutting a release. See
+  docs/deployment.md ("Promote and release").
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org):
   `type(scope): summary (#N)` with type in feat, fix, perf, refactor, docs,
   test, build, ci, chore, revert and scope in server, client, install,

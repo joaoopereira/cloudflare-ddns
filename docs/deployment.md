@@ -51,9 +51,15 @@ deployments made this way.
 One-time setup in a fork of this repository; the zone of your hostname
 (`example.com`) must be in your Cloudflare account. After
 this, every release deploys automatically: production only ever runs a
-released version, never unreleased commits from `development`
+released version, never unreleased commits
 ([`.github/workflows/release.yml`](../.github/workflows/release.yml) calls
-[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)).
+[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)). An
+optional [staging deployment](#7-optional-staging) runs every push to
+`development`.
+
+Branches: `development` is staging, where work lands. `main` is stable: it
+only moves by a promotion pull request from `development`, and releases are
+cut only from `main` (see [Promote and release](#promote-and-release)).
 
 ### 1. D1 database and R2 bucket
 
@@ -142,8 +148,8 @@ The deploy workflow writes these two into `wrangler.toml` (the custom
 domain, with the workers.dev address turned off, and the D1 id) and fails
 with a clear error if either is missing.
 
-When a release is cut (Actions → Release client → Run workflow with a version
-like `v1.2.0`), the release workflow tags `development`, publishes the client
+When a release is cut (Actions → Release client → Run workflow on `main` with
+a version like `v1.2.0`), the release workflow tags `main`, publishes the client
 binaries and then runs the deploy workflow for that tag: it applies D1
 migrations, builds the dashboard, deploys the Worker, and copies the last
 three secrets into Worker secrets (`CF_API_TOKEN`, `ACCESS_TEAM_DOMAIN`,
@@ -163,9 +169,10 @@ installing any machine:
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-Or, without a local clone: **Actions → Release client → Run workflow**, pick
-`development` and enter the version (for example `v0.1.0`); the workflow
-creates the tag itself.
+Run this on `main` (the tagged commit must be on `main`, or the workflow
+fails). Or, without a local clone: **Actions → Release client → Run
+workflow**, pick `main` and enter the version (for example `v0.1.0`); the
+workflow creates the tag itself. Other branches are refused.
 
 `.github/workflows/release.yml` builds every platform, uploads the files to
 R2 and creates a GitHub Release.
@@ -178,6 +185,41 @@ R2 and creates a GitHub Release.
   dashboard with the same values.
 - Opening `https://ddns.example.com` asks you to sign in, then shows the dashboard.
 - Click **Listen for new clients**, run the one-liner on a machine, approve it.
+
+### 7. Optional: staging
+
+Every push to `development` that passes CI deploys to a separate `staging`
+Worker (`cloudflare-ddns-staging`) with its own D1 database and hostname, for
+example `ddns-staging.example.com`. Until it is set up, CI logs a warning
+and skips the deploy. To set it up:
+
+1. Create the staging database: `npx wrangler d1 create ddns-staging`.
+2. Add the staging hostname to both Access applications from step 3 (an
+   application can cover several domains, so the AUD and team domain stay
+   the same).
+3. Add the repository variables `STAGING_HOSTNAME` (e.g.
+   `ddns-staging.example.com`) and `STAGING_D1_DATABASE_ID` (the id from
+   step 1).
+
+Staging uses the same secrets and R2 bucket as production. It has its own
+clients, so it only touches the DNS records of machines approved in the
+staging dashboard; point those at test records. The dashboard footer shows
+the staging build as `git describe` output, like `v1.3.0-4-gabc1234`.
+
+## Promote and release
+
+1. Work lands on `development`; CI runs and deploys it to staging.
+2. Promote to stable by opening a pull request from `development` to `main`:
+   `https://github.com/<owner>/cloudflare-ddns/compare/main...development`,
+   or `gh pr create --base main --head development --title "chore: promote development to main"`.
+   CI runs on the pull request. Merge it with **Create a merge commit** (not
+   squash or rebase, which rewrite the commits and make the branches
+   diverge).
+3. The Sync development workflow then merges `main` back into `development`,
+   so release tags cut on `main` stay reachable from `development` (git-cliff
+   needs them).
+4. Release from `main` (step 5 above). That deploys the release to
+   production.
 
 ## Local development
 

@@ -1,14 +1,21 @@
 name: Deploy
 
-# Deploys a released version (a vX.Y.Z tag) of the Worker and dashboard to
-# https://ddns.example.com, after applying any pending D1 migrations.
-# Production only ever runs released code: pushes to development don't deploy.
-# The Release workflow calls this after publishing a release; to redeploy an
-# existing release, run it manually (Actions → Deploy → Run workflow) with the
-# tag.
-# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
-# and repository variables DDNS_HOSTNAME (added to wrangler.toml as the custom
-# domain) and D1_DATABASE_ID (replaces the placeholder there).
+# Deploys the Worker and dashboard, after applying any pending D1 migrations.
+#
+# Production (https://ddns.example.com) only ever runs a released version (a
+# vX.Y.Z tag cut from main). The Release workflow calls this after publishing
+# a release; to redeploy an existing release, run it manually (Actions →
+# Deploy → Run workflow) with the tag. Manual runs always target production.
+# Requires repository variables DDNS_HOSTNAME (added to wrangler.toml as the
+# custom domain) and D1_DATABASE_ID (replaces the placeholder there).
+#
+# Staging is the `staging` Wrangler environment (Worker
+# cloudflare-ddns-staging, its own D1 database and hostname). CI calls this
+# with environment: staging for every push to development once its checks
+# pass, deploying that commit. It needs repository variables STAGING_HOSTNAME
+# and STAGING_D1_DATABASE_ID and skips with a warning until both are set.
+#
+# Both need repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 # Optional secrets DNS_API_TOKEN, ACCESS_TEAM_DOMAIN and ACCESS_AUD are copied
 # into the Worker's secrets (CF_API_TOKEN, ACCESS_TEAM_DOMAIN, ACCESS_AUD) on
 # every deploy, so they only ever need to be set in GitHub
@@ -17,10 +24,14 @@ name: Deploy
 on:
   workflow_call:
     inputs:
-      version:
-        description: "Release tag to deploy, e.g. v1.2.3"
+      environment:
+        description: "production (needs version) or staging (deploys the calling commit)"
         type: string
-        required: true
+        default: production
+      version:
+        description: "Release tag to deploy to production, e.g. v1.2.3"
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       version:
@@ -31,7 +42,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy
+  group: deploy-${{ inputs.environment || 'production' }}
   cancel-in-progress: false
 
 jobs:
@@ -41,22 +52,30 @@ jobs:
       run:
         working-directory: server
     env:
+      ENVIRONMENT: ${{ inputs.environment || 'production' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       DDNS_HOSTNAME: ${{ vars.DDNS_HOSTNAME }}
       D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+      STAGING_HOSTNAME: ${{ vars.STAGING_HOSTNAME }}
+      STAGING_D1_DATABASE_ID: ${{ vars.STAGING_D1_DATABASE_ID }}
     steps:
       - name: Check the version is a release tag
         working-directory: .
         env:
           VERSION: ${{ inputs.version }}
         run: |
+          if [ "$ENVIRONMENT" = staging ]; then exit 0; fi
+          if [ "$ENVIRONMENT" != production ]; then
+            echo "::error::environment must be production or staging, got '$ENVIRONMENT'"; exit 1
+          fi
           if ! printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::version must be a release tag like v1.2.3, got '$VERSION'"; exit 1
           fi
       - uses: actions/checkout@v4
         with:
-          ref: refs/tags/${{ inputs.version }}
+          # Production: the release tag. Staging: the commit that called us.
+          ref: ${{ env.ENVIRONMENT == 'production' && format('refs/tags/{0}', inputs.version) || '' }}
           # Full history and tags, so the app version can be read from git.
           fetch-depth: 0
       - name: Check deploy prerequisites
@@ -65,6 +84,45 @@ jobs:
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "::warning::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID secrets are not set; skipping deploy. See docs/deployment.md."
             echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif [ "$ENVIRONMENT" = staging ] && { [ -z "$STAGING_HOSTNAME" ] || [ -z "$STAGING_D1_DATABASE_ID" ]; }; then
+            echo "::warning::STAGING_HOSTNAME / STAGING_D1_DATABASE_ID variables are not set; skipping the staging deploy. See docs/deployment.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif [ "$ENVIRONMENT" = staging ]; then
+            if ! printf '%s' "$STAGING_HOSTNAME" | grep -Eq '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$' \
+              || ! printf '%s' "$STAGING_D1_DATABASE_ID" | grep -Eq '^[0-9a-f-]{36}$'; then
+              echo "::error::STAGING_HOSTNAME must be a hostname and STAGING_D1_DATABASE_ID a D1 database UUID. See docs/deployment.md."
+              exit 1
+            fi
+            # Bindings and vars aren't inherited by Wrangler environments, so
+            # staging repeats them: its own database and rate-limit namespace,
+            # the shared releases bucket, on its own custom domain only.
+            releases_repo=$(grep '^RELEASES_REPO' ../wrangler.toml)
+            cat >> ../wrangler.toml <<EOF
+
+          [env.staging]
+          routes = [{ pattern = "$STAGING_HOSTNAME", custom_domain = true }]
+          workers_dev = false
+
+          [env.staging.vars]
+          $releases_repo
+
+          [[env.staging.d1_databases]]
+          binding = "DB"
+          database_name = "ddns-staging"
+          database_id = "$STAGING_D1_DATABASE_ID"
+          migrations_dir = "server/migrations"
+
+          [[env.staging.r2_buckets]]
+          binding = "RELEASES"
+          bucket_name = "ddns-releases"
+
+          [[env.staging.ratelimits]]
+          name = "REGISTER_LIMITER"
+          namespace_id = "1002"
+          simple = { limit = 5, period = 60 }
+          EOF
+            echo "WRANGLER_ENV=--env=staging" >> "$GITHUB_ENV"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           elif ! printf '%s' "$DDNS_HOSTNAME" | grep -Eq '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$' \
             || ! printf '%s' "$D1_DATABASE_ID" | grep -Eq '^[0-9a-f-]{36}$'; then
             echo "::error::Set the repository variables DDNS_HOSTNAME (e.g. ddns.example.com) and D1_DATABASE_ID (the D1 database UUID). See docs/deployment.md."
@@ -88,19 +146,23 @@ jobs:
       - name: Resolve app version
         if: steps.check.outputs.ready == 'true'
         run: |
-          # Release tag plus the short commit, shown in the dashboard footer
-          # and returned by /health.
-          echo "APP_VERSION=${{ inputs.version }}" >> "$GITHUB_ENV"
+          # Release tag (staging: git describe, e.g. v1.3.0-4-gabc1234) plus
+          # the short commit, shown in the dashboard footer and returned by /health.
+          if [ "$ENVIRONMENT" = staging ]; then
+            echo "APP_VERSION=$(git describe --tags --always)" >> "$GITHUB_ENV"
+          else
+            echo "APP_VERSION=${{ inputs.version }}" >> "$GITHUB_ENV"
+          fi
           echo "APP_COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
       - name: Apply D1 migrations
         if: steps.check.outputs.ready == 'true'
-        run: npx wrangler d1 migrations apply ddns --remote
+        run: npx wrangler d1 migrations apply DB --remote $WRANGLER_ENV
       - name: Build dashboard
         if: steps.check.outputs.ready == 'true'
         run: npm run build:dashboard
       - name: Deploy Worker
         if: steps.check.outputs.ready == 'true'
-        run: npx wrangler deploy --var "APP_VERSION:$APP_VERSION" --var "APP_COMMIT:$APP_COMMIT"
+        run: npx wrangler deploy $WRANGLER_ENV --var "APP_VERSION:$APP_VERSION" --var "APP_COMMIT:$APP_COMMIT"
       - name: Sync Worker secrets
         if: steps.check.outputs.ready == 'true'
         env:
@@ -110,7 +172,7 @@ jobs:
         run: |
           put() {
             if [ -n "$2" ]; then
-              printf '%s' "$2" | npx wrangler secret put "$1"
+              printf '%s' "$2" | npx wrangler secret put "$1" $WRANGLER_ENV
             else
               echo "::warning::$3 is not set; skipping Worker secret $1 (see docs/deployment.md)."
             fi

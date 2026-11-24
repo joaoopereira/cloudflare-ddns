@@ -48,3 +48,14 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
       - run: go build ./...
+
+  # Every push to development (staging) deploys to the staging Worker once the
+  # checks above pass. Production only runs releases (release.yml).
+  deploy-staging:
+    name: Deploy to staging
+    needs: [server, client]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+    secrets: inherit

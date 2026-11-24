@@ -1,0 +1,36 @@
+name: Sync development
+
+# After a promotion PR merges into main, bring main's merge commit back into
+# development so release tags (cut on main) are reachable from development.
+# Without this, git-cliff and `git describe` on development don't see them.
+# Pushed with GITHUB_TOKEN, so it doesn't trigger CI or a staging deploy.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-development
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: development
+          fetch-depth: 0
+      - name: Merge main into development
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "development already contains main"; exit 0
+          fi
+          # Default "Merge ..." message: git-cliff skips it as unconventional.
+          git merge --no-edit origin/main
+          git push origin HEAD:development

@@ -7,10 +7,12 @@ name: Release client
 # of the Worker and dashboard to production (deploy.yml). This is the only
 # way code reaches production.
 #
-# Start it either way:
-# - push a tag like v1.2.3, or
-# - run it manually (Actions → Release client → Run workflow) with a version;
-#   it then tags the selected branch itself and pushes that tag.
+# Releases come only from `main` (the stable branch; `development` is
+# staging and reaches `main` by pull request). Start it either way:
+# - run it manually (Actions → Release client → Run workflow) on `main` with a
+#   version; it then tags `main` itself and pushes that tag, or
+# - push a tag like v1.2.3 on a commit that is already on `main`.
+# Any other ref fails before anything is built.
 # Requires the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
 
 on:
@@ -40,6 +42,9 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            if [ "$GITHUB_REF" != refs/heads/main ]; then
+              echo "::error::releases are cut from main only; run this workflow on main, not '$GITHUB_REF_NAME'"; exit 1
+            fi
             VERSION="$INPUT_VERSION"
             if ! printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
               echo "::error::version must look like v1.2.3, got '$VERSION'"; exit 1
@@ -54,6 +59,9 @@ jobs:
             git push origin "refs/tags/$VERSION"
           else
             VERSION="$GITHUB_REF_NAME"
+            if ! git merge-base --is-ancestor "$GITHUB_REF^{commit}" origin/main; then
+              echo "::error::tag $VERSION is not on main; release only commits that were promoted to main"; exit 1
+            fi
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 

@@ -8,7 +8,9 @@ description: Deploy or check the deployment of the cloudflare-ddns Worker. Use w
 Production only ever runs a released version. The Release workflow
 (`.github/workflows/release.yml`) tags, publishes the client and then calls
 `.github/workflows/deploy.yml` for that tag (migrations first, then
-`wrangler deploy`). Pushes to `development` don't deploy. To redeploy an
+`wrangler deploy`); releases come only from `main`. Pushes to `development`
+deploy only to the `staging` environment (CI's deploy-staging job, needs repo
+variables `STAGING_HOSTNAME` and `STAGING_D1_DATABASE_ID`). To redeploy an
 existing release, run the Deploy workflow with `version: vX.Y.Z` (GitHub MCP
 `actions_run_trigger`, `workflow_id: deploy.yml`). Never deploy unreleased
 code, and only deploy or release when the user asks.
