@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { AppEnv, Env } from "../env";
-import { sha256Hex } from "../lib/util";
+import { LOOPBACK, sha256Hex } from "../lib/util";
 import installPs1 from "../../../install/install.ps1";
 import installSh from "../../../install/install.sh";
 
@@ -9,8 +9,6 @@ export const publicRoutes = new Hono<AppEnv>();
 
 const ASSET_RE = /^(ddns-client_(linux|darwin|windows)_(amd64|arm64|arm)(\.exe)?|checksums\.txt)$/;
 const VERSION_RE = /^v\d+\.\d+\.\d+([-.+][0-9A-Za-z.-]+)?$/;
-
-const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /**
  * An installer pointing at the address it was requested from, so no hostname

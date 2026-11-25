@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "../env";
+import { LOOPBACK } from "./util";
 
 interface Jwk extends JsonWebKey {
   kid: string;
@@ -65,8 +66,12 @@ export async function verifyAccessJwt(
 /** Require a valid Cloudflare Access identity on admin routes. */
 export const requireAccess: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (c.env.ALLOW_INSECURE_ADMIN === "true") {
-    c.set("adminEmail", "dev@localhost");
-    return next();
+    // Only honoured on loopback, so a stray setting in production can't open the admin API.
+    if (LOOPBACK.has(new URL(c.req.url).hostname)) {
+      c.set("adminEmail", "dev@localhost");
+      return next();
+    }
+    console.warn("ALLOW_INSECURE_ADMIN ignored: request is not from localhost");
   }
   const { ACCESS_TEAM_DOMAIN: team, ACCESS_AUD: aud } = c.env;
   if (!team || !aud) {

@@ -16,12 +16,23 @@ beforeEach(async () => {
   await resetDb(db);
   env = makeEnv(db);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("admin auth", () => {
   it("returns 503 when Access is not configured", async () => {
     const res = await call(makeEnv(db, { ALLOW_INSECURE_ADMIN: undefined }), "GET", "/api/admin/clients");
     expect(res.status).toBe(503);
+  });
+
+  it("ignores ALLOW_INSECURE_ADMIN outside localhost", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const res = await app.request("https://ddns.example.com/api/admin/me", {}, makeEnv(db));
+    expect(res.status).toBe(503);
+    const local = await app.request("http://127.0.0.1:8787/api/admin/me", {}, makeEnv(db));
+    expect(await local.json()).toEqual({ email: "dev@localhost" });
   });
 
   it("returns 401 without a valid Access token", async () => {

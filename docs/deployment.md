@@ -230,7 +230,10 @@ CF_API_TOKEN=<a token for a test zone>
 ALLOW_INSECURE_ADMIN=true
 ```
 
-`ALLOW_INSECURE_ADMIN` skips the Access check. Never set it in production.
+`ALLOW_INSECURE_ADMIN` skips the Access check, but only for requests to
+`localhost`, `127.0.0.1` or `[::1]` (a local `wrangler dev`). Anywhere else the
+Worker ignores it, logs a warning and requires Access as usual. Never set it in
+production.
 
 ## Manual deploy
 

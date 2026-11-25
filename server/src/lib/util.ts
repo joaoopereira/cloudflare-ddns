@@ -15,3 +15,6 @@ export function safeEqual(a: string, b: string): boolean {
 
 const IPV4 = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
 export const isIPv4 = (ip: string): boolean => IPV4.test(ip);
+
+/** Hostnames of a local `wrangler dev`; a deployed Worker never sees these. */
+export const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);

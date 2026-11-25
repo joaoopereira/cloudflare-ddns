@@ -58,4 +58,4 @@ RELEASES_REPO = "joaoopereira/cloudflare-ddns"
 #   ACCESS_TEAM_DOMAIN  Cloudflare Access team domain, e.g. myteam.cloudflareaccess.com
 #   ACCESS_AUD          Audience (AUD) tag of the Access application for the dashboard
 # Local development only (.dev.vars next to this file):
-#   ALLOW_INSECURE_ADMIN=true  skips the Access check on /api/admin
+#   ALLOW_INSECURE_ADMIN=true  skips the Access check on /api/admin (localhost requests only)

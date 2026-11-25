@@ -16,6 +16,9 @@ afterAll(async () => dispose?.());
 
 const get = (path: string, extra = {}) =>
   app.request(`https://ddns.example.com${path}`, {}, { ...makeEnv(db), RELEASES: bucket, ...extra });
+// The admin API only skips Access on localhost.
+const getAdmin = (path: string, extra = {}) =>
+  app.request(`http://localhost${path}`, {}, { ...makeEnv(db), RELEASES: bucket, ...extra });
 
 describe("installers", () => {
   it.each(["/install.sh", "/install.ps1"])("%s is served with the server URL filled in", async (path) => {
@@ -57,7 +60,7 @@ describe("GET /download", () => {
   });
 
   it("exposes the latest version to the dashboard", async () => {
-    const res = await get("/api/admin/releases/latest");
+    const res = await getAdmin("/api/admin/releases/latest");
     expect(await res.json()).toEqual({ version: "v1.2.3" });
   });
 });
@@ -108,9 +111,9 @@ describe("GET /download with RELEASES_REPO", () => {
   it("learns the latest version from GitHub when the bucket has none, and keeps it for an hour", async () => {
     stubGitHub();
     await bucket.delete("latest.txt");
-    expect(await (await get("/api/admin/releases/latest", upstream)).json()).toEqual({ version: "v2.0.0" });
+    expect(await (await getAdmin("/api/admin/releases/latest", upstream)).json()).toEqual({ version: "v2.0.0" });
     calls = [];
-    expect(await (await get("/api/admin/releases/latest", upstream)).json()).toEqual({ version: "v2.0.0" });
+    expect(await (await getAdmin("/api/admin/releases/latest", upstream)).json()).toEqual({ version: "v2.0.0" });
     expect(calls).toEqual([]);
   });
 
